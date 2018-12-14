@@ -1,13 +1,14 @@
 ##################
 # Survey Motion
 # Part I: Build Prediction Models
+# Data: Field experiment
 # Christoph Kern
 # R 3.4.4
 ##################
 
 ## 01: Setup
 
-set.seed(9253)
+set.seed(2748)
 
 library(tidyverse)
 library(matrixStats)
@@ -18,7 +19,8 @@ library(partykit)
 library(randomForest)
 library(xgboost)
 
-load("~/Uni/Forschung/Article/2019 - MASS/data/Training_Data_1_0.RData")
+# setwd("/home/ckern/Uni/Forschung/Article/2019 - MASS")
+load("../data/Netquest_Train.RData")
 
 # y
 
@@ -304,4 +306,4 @@ resamps3
 summary(resamps3)
 bwplot(resamps3)
 
-save(glmnet1, glmnet2, ctree1, ctree2, rf1, rf2, xgb1, xgb2, file = "output1.Rdata")
+# save(glmnet1, glmnet2, ctree1, ctree2, rf1, rf2, xgb1, xgb2, file = "output2.Rdata")

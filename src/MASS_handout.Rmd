@@ -1,0 +1,236 @@
+---
+title: "SurveyMotion: Predicting completion conditions in mobile web surveys by using acceleration data"
+subtitle: "MASS Workshop"
+author: | 
+  | Christoph Kern^a^, Jan Karem Höhne^a,b^, Stephan Schlosser^c^ and Melanie Revilla^b^
+  | ^a^University of Mannheim
+  | ^b^RECSM-Universitat Pompeu Fabra
+  | ^c^University of Göttingen
+date: "`r Sys.Date()`"
+header-includes:
+- \usepackage{float}
+- \floatplacement{figure}{H}
+output:
+  pdf_document:
+    toc: no
+    df_print: kable
+    fig_caption: true
+bibliography: mass.bib
+abstract: "Participation in web surveys via smartphones increased continuously in recent years. The reasons for this increase are a skyrocketing proportion of smartphone owners and an increase in mobile Internet access. However, research has shown that smartphone respondents are frequently distracted and/or multitasking, which may affect data quality. In this study, we therefore investigate if we can predict respondents’ completion conditions (e.g., standing or walking) in mobile web surveys by employing machine learning techniques. For this purpose, we use acceleration data of smartphone respondents – measured by means of the JavaScript-based tool “SurveyMotion (SM)” – that are collected in a lab experiment at the University of Göttingen as well as in a field experiment that is conducted by the access panel Netquest in Spain. Both experiments systematically vary the completion conditions (e.g., standing and walking). Initial results by using the lab data: To predict completion conditions, we extract features from the acceleration data by aggregating over the repeated acceleration measurements on a page level. This results in a sparse set of features that summarize the distribution (mean, quantiles, etc.) of acceleration values that were collected repeatedly over time for each respondent-page. Regularized regression and tree-based models were trained and tested using grouped Cross-Validation, reflecting the hierarchical structure of the data (pages nested in respondents). When building the prediction models, both a multiclass (sitting, standing, walking, climbing stairs) and a binary (moving (walking, climbing), not moving (sitting, standing)) version of the outcome variable were considered. It becomes evident that the acceleration features can be used to build sparse prediction models that almost perfectly discriminate between completion conditions on hold-out sets, with cross-validated ROC-AUCs between 0.981 and 0.998 for the binary outcome. Given this baseline, prediction performance was hardly affected when raw acceleration measurements were considered as additional features. The evaluation results indicate that the trained prediction models can be used to precisely predict completion conditions in (new) mobile web surveys that collect SM data. We expect similar results for the field data collected by Netquest."
+---
+
+```{r, include = FALSE}
+knitr::opts_knit$set(root.dir = "/home/ckern/Uni/Forschung/Article/2019 - MASS",
+              fig.pos = "H")
+load("../src/output1.Rdata")
+load("../src/output3.Rdata")
+```
+
+```{r, include = FALSE}
+library(knitr)
+library(tidyverse)
+library(gridExtra)
+library(ggmosaic)
+library(caret)
+```
+
+## Introduction
+
+Investigating the utility of acceleration data to study completion conditions and data quality in mobile web surveys
+
+* Measurement in mobile web surveys challenged by distractions [@Lynn2012; @Toninelli2016]
+* Self-reports on distractions subject to error
+* Utilize smartphone sensors to derive completion conditions
+  
+Survey Motion (@Hoehneforthcoming)
+
+* JavaScript-based paradata tool
+* Measures the total acceleration (TA)
+     + $TA = \sqrt{(a_x^2 + a_y^2 + a_z^2)}$
+* Code can be implemented as an invisible, user-defined question in a web survey page
+
+## Data
+
+Lab experiment (train set)
+
+* 89 university students
+* Randomly assigned to one of four experimental groups
+    + The first group (n = 22) was seated in front of a desk
+    + The second group (n = 22) stood at a fixed point
+    + The third group (n = 23) walked along an aisle
+    + The fourth group (n = 22) climbed stairs
+
+Cross-sectional web survey (test set)
+
+* 2,357 respondents
+* 61.6% smartphone respondents
+* SM data available for 97,2% of smartphone respondents
+
+Data preparation
+
+* Unit of observation: Respondent-pages
+1. Outcome
+    * 4 class: sitting, standing, walking, climbing stairs
+    * 2 class: moving, not moving
+2. Predictors
+    * Aggregated TA measurements (summary statistics over repeated acceleration values)
+    * Raw TA measurements
+
+```{r echo = FALSE}
+sm[c(1:4,17:18), c(1,3,13113:13117)]
+```
+
+\begin{center}
+Table 1: Training data example
+\end{center}
+
+## Preliminary results
+
+### Model training (lab data)
+
+Model building and evaluation
+
+* ML methods
+    + Elastic net (GLMnet; @Friedman2010)
+    + Conditional Inference Trees (CTREE; @Hothorn2015)
+    + Random Forests and Extremely Randomized Trees (RF; @Wright2017)
+    + Extreme Gradient Boosting (XGBoost; @Chen2016)
+* Feature groups
+    + Only aggregated TA features
+    + Aggregated and raw TA values
+* 10-Fold Cross-Validation (grouped by respondent IDs)
+
+```{r echo = FALSE, out.width = '60%', fig.align = "center", fig.cap = "CV results (4 class outcome)"}
+p1 <- ggplot(resamp_l1) +
+  geom_boxplot(aes(y = AUC, x = fct_rev(model), fill = model)) +
+  ylim(0.5, 1) +
+  labs(x = "") +
+  labs(y = "ROC-AUC") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+p2 <- ggplot(resamp_l1) +
+  geom_boxplot(aes(y = logLoss, x = fct_rev(model), fill = model)) +
+  labs(x = "") +
+  labs(y = "logLoss") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+grid.arrange(p1, p2, nrow = 1)
+```
+
+```{r echo = FALSE, out.width = '60%', fig.align = "center", fig.cap = "CV results (2 class outcome)"}
+p3 <- ggplot(resamp_l2) +
+  geom_boxplot(aes(y = ROC, x = fct_rev(model), fill = model)) +
+  ylim(0.5, 1) +
+  labs(x = "") +
+  labs(y = "ROC-AUC") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+p4 <- ggplot(resamp_l2) +
+  geom_boxplot(aes(y = logLoss, x = fct_rev(model), fill = model)) +
+  labs(x = "") +
+  labs(y = "logLoss") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+grid.arrange(p3, p4, nrow = 1)
+```
+
+```{r echo = FALSE, out.width = '55%', fig.align = "center", fig.cap = "RF with raw TA features (2 class outcome)"}
+imp_rf_l3 <- varImp(rf_l3)$importance
+imp_rf_l3 <- rownames_to_column(imp_rf_l3, "varname")
+
+imp_rf_l3 <-
+  imp_rf_l3 %>%
+  top_n(15, Overall) %>%
+  arrange(desc(Overall)) %>%
+  mutate(order = 16 - row_number())
+
+ggplot(imp_rf_l3) +
+  geom_point(aes(x = Overall, y = order)) + 
+  geom_segment(aes(y = order, yend = order, x = 1, xend = Overall)) +
+  labs(x = "Importance", y = "") +
+  xlim(0, 100) +
+  scale_y_continuous(
+    breaks = imp_rf_l3$order,
+    labels = imp_rf_l3$varname) +
+  theme_light()
+```
+
+```{r echo = FALSE}
+round(as.data.frame.matrix(confusionMatrix(rf_l1)$table), digits = 3)
+```
+
+\begin{center}
+Table 2: RF confusion matrix (4 class outcome)
+\end{center}
+
+### Prediction 
+
+```{r echo = FALSE, out.width = '70%', fig.align = "center", fig.cap = "Predicted completion conditions"}
+g5 <- ggplot(G_test_long) +
+  geom_mosaic(aes(x = product(p_rf_l1, page), fill = p_rf_l1), na.rm = TRUE) +
+  labs(y = "", x = "", title = "Random Forest") +
+  theme_light()  +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45,
+                                hjust = 1,
+                                vjust = 1))
+
+g6 <- ggplot(G_test_long) +
+  geom_mosaic(aes(x = product(p_xgb_l1, page), fill = p_xgb_l1), na.rm = TRUE) +
+  labs(y = "", x = "", title = "XGBoost" ) +
+  theme_light()  +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45,
+                                hjust = 1,
+                                vjust = 1))
+
+grid.arrange(g5, g6, nrow = 1)
+```
+
+```{r echo = FALSE, warning = FALSE, out.width = '70%', fig.align = "center", fig.cap = "Completion times by predicted completion conditions (RF)"}
+g7 <- G_test_long %>%
+  drop_na(p_rf_l2) %>%
+  filter(!page %in% c("Matrix_1", "Matrix_2")) %>%
+  ggplot() +
+  geom_boxplot(aes(y = Completion_Time, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  labs(y = "Completion Time", x = "") +
+  ylim(0, 50000) +
+  theme_light() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45,
+                                hjust = 1,
+                                vjust = 1))
+
+g8 <- G_test_long %>%
+  drop_na(p_rf_l2) %>%
+  filter(page %in% c("Matrix_1", "Matrix_2")) %>%
+  ggplot() +
+  geom_boxplot(aes(y = Completion_Time, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  labs(y = "", x = "") +
+  ylim(0, 100000) +
+  guides(color = guide_legend(title = "")) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 45,
+                                hjust = 1,
+                                vjust = 1))
+
+grid.arrange(g7, g8, nrow = 1)
+```
+
+## Next steps
+
+* Add second training data set (Netquest field experiment)
+     + Train with lab data and predict outcome in Netquest data
+     + Train with Netquest data and predict outcome in lab data
+     + Train final model with both training sets
+* Study effect of completion condition on data quality proxies in test set
+
+## References
