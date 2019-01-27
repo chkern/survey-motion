@@ -2,10 +2,10 @@
 title: "SurveyMotion: Predicting completion conditions in mobile web surveys by using acceleration data"
 subtitle: "MASS Workshop"
 author: | 
-  | Christoph Kern^a^, Jan Karem Höhne^a,b^, Stephan Schlosser^c^ and Melanie Revilla^b^
+  | Christoph Kern^a^, Jan Karem H�hne^a,b^, Stephan Schlosser^c^ and Melanie Revilla^b^
   | ^a^University of Mannheim
   | ^b^RECSM-Universitat Pompeu Fabra
-  | ^c^University of Göttingen
+  | ^c^University of G�ttingen
 date: "`r Sys.Date()`"
 header-includes:
 - \usepackage{float}
@@ -16,14 +16,14 @@ output:
     df_print: kable
     fig_caption: true
 bibliography: mass.bib
-abstract: "Participation in web surveys via smartphones increased continuously in recent years. The reasons for this increase are a skyrocketing proportion of smartphone owners and an increase in mobile Internet access. However, research has shown that smartphone respondents are frequently distracted and/or multitasking, which may affect data quality. In this study, we therefore investigate if we can predict respondents’ completion conditions (e.g., standing or walking) in mobile web surveys by employing machine learning techniques. For this purpose, we use acceleration data of smartphone respondents – measured by means of the JavaScript-based tool “SurveyMotion (SM)” – that are collected in a lab experiment at the University of Göttingen as well as in a field experiment that is conducted by the access panel Netquest in Spain. Both experiments systematically vary the completion conditions (e.g., standing and walking). Initial results by using the lab data: To predict completion conditions, we extract features from the acceleration data by aggregating over the repeated acceleration measurements on a page level. This results in a sparse set of features that summarize the distribution (mean, quantiles, etc.) of acceleration values that were collected repeatedly over time for each respondent-page. Regularized regression and tree-based models were trained and tested using grouped Cross-Validation, reflecting the hierarchical structure of the data (pages nested in respondents). When building the prediction models, both a multiclass (sitting, standing, walking, climbing stairs) and a binary (moving (walking, climbing), not moving (sitting, standing)) version of the outcome variable were considered. It becomes evident that the acceleration features can be used to build sparse prediction models that almost perfectly discriminate between completion conditions on hold-out sets, with cross-validated ROC-AUCs between 0.981 and 0.998 for the binary outcome. Given this baseline, prediction performance was hardly affected when raw acceleration measurements were considered as additional features. The evaluation results indicate that the trained prediction models can be used to precisely predict completion conditions in (new) mobile web surveys that collect SM data. We expect similar results for the field data collected by Netquest."
+abstract: "Participation in web surveys via smartphones increased continuously in recent years. The reasons for this increase are a skyrocketing proportion of smartphone owners and an increase in mobile Internet access. However, research has shown that smartphone respondents are frequently distracted and/or multitasking, which may affect data quality. In this study, we therefore investigate if we can predict respondents' completion conditions (e.g., standing or walking) in mobile web surveys by employing machine learning techniques. For this purpose, we use acceleration data of smartphone respondents -- measured by means of the JavaScript-based tool 'SurveyMotion (SM)' -- that are collected in a lab experiment at the University of G�ttingen as well as in a field experiment that is conducted by the access panel Netquest in Spain. Both experiments systematically vary the completion conditions (e.g., standing and walking). Initial results by using the lab data: To predict completion conditions, we extract features from the acceleration data by aggregating over the repeated acceleration measurements on a page level. This results in a sparse set of features that summarize the distribution (mean, quantiles, etc.) of acceleration values that were collected repeatedly over time for each respondent-page. Regularized regression and tree-based models were trained and tested using grouped Cross-Validation, reflecting the hierarchical structure of the data (pages nested in respondents). When building the prediction models, both a multiclass (sitting, standing, walking, climbing stairs) and a binary (moving (walking, climbing), not moving (sitting, standing)) version of the outcome variable were considered. It becomes evident that the acceleration features can be used to build sparse prediction models that almost perfectly discriminate between completion conditions on hold-out sets, with cross-validated ROC-AUCs between 0.981 and 0.998 for the binary outcome. Given this baseline, prediction performance was hardly affected when raw acceleration measurements were considered as additional features. The evaluation results indicate that the trained prediction models can be used to precisely predict completion conditions in (new) mobile web surveys that collect SM data. We expect similar results for the field data collected by Netquest."
 ---
 
 ```{r, include = FALSE}
-knitr::opts_knit$set(root.dir = "/home/ckern/Uni/Forschung/Article/2019 - MASS",
+knitr::opts_knit$set(root.dir = "E:\\Uni\\Forschung\\Article\\2019 - MASS",
               fig.pos = "H")
-load("../src/output1.Rdata")
-load("../src/output3.Rdata")
+load("..\\src\\output1.Rdata")
+load("..\\src\\output3.Rdata")
 ```
 
 ```{r, include = FALSE}
@@ -42,7 +42,7 @@ Investigating the utility of acceleration data to study completion conditions an
 * Self-reports on distractions subject to error
 * Utilize smartphone sensors to derive completion conditions
   
-Survey Motion (@Hoehneforthcoming)
+Survey Motion (@Hohne2019)
 
 * JavaScript-based paradata tool
 * Measures the total acceleration (TA)
@@ -65,6 +65,95 @@ Cross-sectional web survey (test set)
 * 2,357 respondents
 * 61.6% smartphone respondents
 * SM data available for 97,2% of smartphone respondents
+
+```{r, eval = FALSE}
+# mkdirs(paste0("=Final Data OUT=/Plots_SM_G_Kor/Plots_SM_G_Kor_", PageLabel))
+
+# if(!is.na(SM_Value[i,4]) & SM_Value[i,4]>0  ){
+#      png(filename=paste0("./=Final Data OUT=/Plots_SM_G_Kor/Plots_SM_G_Kor_", PageLabel, "/Plot_", PageLabel, "_lfdn_", i,".png"),
+#          width     = 2400,
+#          height    = 2400,
+#          units     = "px",
+#          res       = 1200,
+#          pointsize = 4)
+
+#      plot(SM_Value2_Kor, type = "l", lwd=0.2, col = "red", ylim=c(0,5),main = paste0("SM_",PageLabel,"_lfdn_",i ))
+#      abline(h=mean(SM_Value2_Kor), col = "blue", lwd=0.4)
+#      abline(h=sd(SM_Value2_Kor), col = "green", lwd=0.4)
+#      dev.off()
+#    }
+```
+
+```{r echo = FALSE, out.width = '60%', fig.align = "center", fig.cap = "Examples of total acceleration profiles (n = 5)"}
+rawmotion <- grep("SM_[0123456789]", names(sm), value = TRUE)
+row.names(sm) <- paste0("SM_", row.names(sm))
+
+p1 <- sm %>%
+  filter(Group == 1 & page == "Matrix") %>%
+  sample_n(5) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.2) + 
+  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red") +
+  ylim(0, 5) +
+  labs(x = "Time", y = "TA", title = "Sitting") +
+  theme_light() +
+  theme(legend.position = "none")
+
+p2 <- sm %>%
+  filter(Group == 2 & page == "Matrix") %>%
+  sample_n(5) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.2) + 
+  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red") +
+  ylim(0, 5) +
+  labs(x = "Time", y = "TA", title = "Standing") +
+  theme_light() +
+  theme(legend.position = "none")
+
+p3 <- sm %>%
+  filter(Group == 3 & page == "Matrix") %>%
+  sample_n(5) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.2) + 
+  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red") +
+  ylim(0, 15) +
+  labs(x = "Time", y = "TA", title = "Walking") +
+  theme_light() +
+  theme(legend.position = "none")
+
+p4 <- sm %>%
+  filter(Group == 4 & page == "Matrix") %>%
+  sample_n(5) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.2) + 
+  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red") +
+  ylim(0, 15) +
+  labs(x = "Time", y = "TA", title = "Climbing") +
+  theme_light() +
+  theme(legend.position = "none")
+
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+```
 
 Data preparation
 

@@ -19,7 +19,7 @@ library(partykit)
 library(ranger)
 library(xgboost)
 
-setwd("/home/ckern/Uni/Forschung/Article/2019 - MASS")
+setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
 load("./data/G_Train.RData")
 
 # y

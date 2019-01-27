@@ -19,34 +19,79 @@ library(partykit)
 library(randomForest)
 library(xgboost)
 
-# setwd("/home/ckern/Uni/Forschung/Article/2019 - MASS")
-load("../data/Netquest_Train.RData")
+setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
+load("./data/Netquest_Train.RData")
+
+# Wide to long
+
+Out1 <- select(Out, 1:14, 15, 20:24, 16, 25:29, 17, 30:34, 18, 35:39, 19, 40:44)
+
+SM_Final1 <- reshape(Out1, direction = 'long', 
+                     varying = 15:44, 
+                     timevar = 'var',
+                     times = c('SE1', 'SE2', 'SE3', 'SE4', 'SE5'),
+                     v.names = c('SM', 'SF_OFF', 'SF_OFF_Count', 'SF_OFF_Time', 'SF_ON_Time', 'Scroll_Time'),
+                     idvar = 'ID')
+
+names1 <- c("SM.SE1_SM_G.304", "SM.SE4_SM_G.483")
+names2 <- paste0(rep("SM.SE1_SM.",178),305:483)
+names3 <- paste0(rep("SM.SE1_SM_G.",178),305:483)
+names4 <- paste0(rep("SM.SE2_SM.",300),183:483)
+names5 <- paste0(rep("SM.SE2_SM_G.",300),183:483)
+names6 <- paste0(rep("SM.SE3_SM.",77),406:483)
+names7 <- paste0(rep("SM.SE3_SM_G.",77),406:483)
+names8 <- paste0(rep("SM.SE5_SM.",194),289:483)
+names9 <- paste0(rep("SM.SE5_SM_G.",194),289:483)
+
+Out[, c(names1, names2, names3, names4, names5, names6, names7, names8, names9)] <- NA
+
+Out2 <- select(Out, ID, 
+               starts_with("SM.SE1_SM."), starts_with("SM.SE1_SM_G."),
+               starts_with("SM.SE2_SM."), starts_with("SM.SE2_SM_G."),
+               starts_with("SM.SE3_SM."), starts_with("SM.SE3_SM_G."),
+               starts_with("SM.SE4_SM."), starts_with("SM.SE4_SM_G."),
+               starts_with("SM.SE5_SM."), starts_with("SM.SE5_SM_G."))
+
+names1 <- paste0(rep("SM", 483), 1:483, rep(".SE1", 483))
+names2 <- paste0(rep("SM_G", 483), 1:483, rep(".SE1", 483))
+names3 <- paste0(rep("SM", 483), 1:483, rep(".SE2", 483))
+names4 <- paste0(rep("SM_G", 483), 1:483, rep(".SE2", 483))
+names5 <- paste0(rep("SM", 483), 1:483, rep(".SE3", 483))
+names6 <- paste0(rep("SM_G", 483), 1:483, rep(".SE3", 483))
+names7 <- paste0(rep("SM", 483), 1:483, rep(".SE4", 483))
+names8 <- paste0(rep("SM_G", 483), 1:483, rep(".SE4", 483))
+names9 <- paste0(rep("SM", 483), 1:483, rep(".SE5", 483))
+names10 <- paste0(rep("SM_G", 483), 1:483, rep(".SE5", 483))
+colnames(Out2) <- c("ID", names1, names2, names3, names4, names5, names6, names7, names8, names9, names10)
+
+SM_Final2 <- reshape(Out2, direction = 'long', 
+                     varying = 2:4831, 
+                     timevar = 'var',
+                     sep = ".",
+                     idvar = 'ID')
+
+SM_Final <- merge(SM_Final1, SM_Final2, by = c("ID", "var"))
 
 # y
 
-table(SM_Final$Group)
-
-SM_Final$G_group <- NA
-SM_Final$G_group <- factor(SM_Final$G_group, levels = c("Sitting", "Standing", "Walking", "Climbing"))
-SM_Final$G_group[SM_Final$Group == 1] <- "Sitting"
-SM_Final$G_group[SM_Final$Group == 2] <- "Standing"
-SM_Final$G_group[SM_Final$Group == 3] <- "Walking"
-SM_Final$G_group[SM_Final$Group == 4] <- "Climbing"
-table(SM_Final$G_group, useNA = "always")
+table(SM_Final$SM_CONDITION)
 
 SM_Final$D_group <- NA
 SM_Final$D_group <- factor(SM_Final$D_group, levels = c("Not_Moving", "Moving"))
-SM_Final$D_group[SM_Final$Group == 1 | SM_Final$Group == 2] <- "Not_Moving"
-SM_Final$D_group[SM_Final$Group == 3 | SM_Final$Group == 4] <- "Moving"
+SM_Final$D_group[SM_Final$SM_CONDITION == 1] <- "Not_Moving"
+SM_Final$D_group[SM_Final$SM_CONDITION == 2] <- "Moving"
 table(SM_Final$D_group, useNA = "always")
 
 # X
 
 # nearZeroVar(SM_Final)
 
-motionvars <- grep("SM_" , names(SM_Final), value = TRUE)
+motionvars <- grep("SM[123456789]" , names(SM_Final), value = TRUE)
 
-SM_Final <- arrange(SM_Final, ID, page)
+SM_Final <- 
+  SM_Final %>%
+  arrange(ID, var) %>%
+  filter(!is.na(SM1))
 
 sm <-
   SM_Final %>%
@@ -68,13 +113,7 @@ sm <-
   select(SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95) %>%
   bind_cols(SM_Final, .)
 
-sm1 <- select(sm, G_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
-
-sm2 <- select(sm, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
-
-sm3 <- select(sm, motionvars[5:50], G_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
-
-sm4 <- select(sm, motionvars[5:50], D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
+sm1 <- select(sm, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
 
 ## 02: Tuning Setup
 
@@ -82,151 +121,73 @@ sm4 <- select(sm, motionvars[5:50], D_group, SM_mean, SM_med, SM_var, SM_mad, SM
 
 folds <- groupKFold(sm$ID, k = 10)
 
-fiveStats <- function(...) c(twoClassSummary(...), defaultSummary(...))
+evalStats <- function(...) c(twoClassSummary(...), 
+                             defaultSummary(...),
+                             mnLogLoss(...))
 
-ctrl1  <- trainControl(method = "cv",
-                       index = folds,
-                       number = 10,
-                       summaryFunction = multiClassSummary,
-                       classProbs = TRUE,
-                       verboseIter = TRUE)
-
-ctrl2  <- trainControl(method = "cv",
-                       index = folds,
-                       number = 10,
-                       summaryFunction = fiveStats,
-                       classProbs = TRUE,
-                       verboseIter = TRUE)
+ctrl  <- trainControl(method = "cv",
+                      index = folds,
+                      number = 10,
+                      summaryFunction = evalStats,
+                      classProbs = TRUE,
+                      verboseIter = TRUE)
 
 ## 03: glmnet
 
 grid <- expand.grid(alpha = c(0, 0.5, 1),
                     lambda = seq(0.1, 0, length = 30))
 
-set.seed(74684)
-glmnet1 <- train(G_group  ~ .,
-                data = sm1,
-                method = "glmnet",
-                family = "multinomial",
-                #type.multinomial = "grouped",
-                trControl = ctrl1,
-                tuneGrid = grid,
-                metric = "AUC")
+set.seed(83357)
+glmnet_f <- train(D_group  ~ .,
+                  data = sm1,
+                  method = "glmnet",
+                  family = "binomial",
+                  trControl = ctrl,
+                  tuneGrid = grid,
+                  metric = "logLoss")
 
-glmnet1
-plot(glmnet1)
-confusionMatrix(glmnet1)
-plot(varImp(glmnet1))
-
-set.seed(74684)
-glmnet2 <- train(D_group  ~ .,
-                data = sm2,
-                method = "glmnet",
-                family = "binomial",
-                trControl = ctrl2,
-                tuneGrid = grid,
-                metric = "ROC")
-
-glmnet2
-plot(glmnet2)
-confusionMatrix(glmnet2)
-plot(varImp(glmnet2))
-
-set.seed(74684)
-glmnet3 <- train(D_group  ~ .,
-                 data = sm4,
-                 method = "glmnet",
-                 family = "binomial",
-                 trControl = ctrl2,
-                 tuneGrid = grid,
-                 metric = "ROC")
-
-plot(glmnet3)
-plot(varImp(glmnet3), top = 20)
+glmnet_f
+plot(glmnet_f)
+confusionMatrix(glmnet_f)
+plot(varImp(glmnet_f))
 
 ## 04: CTREE
 
 grid <- expand.grid(mincriterion = c(0.99, 0.95, 0.90, 0.85, 0.75))
 
-set.seed(74684)
-ctree1 <- train(G_group  ~ .,
-             data = sm1,
-             method = "ctree",
-             trControl = ctrl1,
-             tuneGrid = grid,
-             metric = "AUC")
+set.seed(83357)
+ctree_f <- train(D_group  ~ .,
+                 data = sm1,
+                 method = "ctree",
+                 trControl = ctrl,
+                 tuneGrid = grid,
+                 metric = "logLoss")
 
-ctree1
-plot(ctree1)
-confusionMatrix(ctree1)
-plot(ctree1$finalModel)
+ctree_f
+plot(ctree_f)
+confusionMatrix(ctree_f)
+plot(ctree_f$finalModel)
 
-set.seed(74684)
-ctree2 <- train(D_group  ~ .,
-             data = sm2,
-             method = "ctree",
-             trControl = ctrl2,
-             tuneGrid = grid,
-             metric = "ROC")
+## 05: Random Forest and Extra Trees
 
-ctree2
-plot(ctree2)
-confusionMatrix(ctree2)
-plot(ctree2$finalModel)
+cols <- ncol(model.matrix(D_group  ~ ., data = sm1)[,-1])
+grid <- expand.grid(mtry = c(round(sqrt(cols)), round(log(cols))),
+                    splitrule = c("gini", "extratrees"),
+                    min.node.size = 15)
 
-set.seed(74684)
-ctree3 <- train(D_group  ~ .,
-                data = sm4,
-                method = "ctree",
-                trControl = ctrl2,
-                tuneGrid = grid,
-                metric = "ROC")
+set.seed(83357)
+rf_f <- train(D_group  ~ .,
+              data = sm1,
+              method = "ranger",
+              trControl = ctrl,
+              tuneGrid = grid,
+              metric = "logLoss",
+              importance = "impurity")
 
-plot(ctree3)
-plot(ctree3$finalModel)
-
-## 05: Random Forest
-
-grid <- expand.grid(mtry = 1:14)
-
-set.seed(74684)
-rf1 <- train(G_group  ~ .,
-             data = sm1,
-             method = "rf",
-             trControl = ctrl1,
-             tuneGrid = grid,
-             metric = "AUC")
-
-rf1
-plot(rf1)
-confusionMatrix(rf1)
-plot(varImp(rf1))
-
-set.seed(74684)
-rf2 <- train(D_group  ~ .,
-             data = sm2,
-             method = "rf",
-             trControl = ctrl2,
-             tuneGrid = grid,
-             metric = "ROC")
-
-rf2
-plot(rf2)
-confusionMatrix(rf2)
-plot(varImp(rf2))
-
-grid <- expand.grid(mtry = 10*1:6)
-
-set.seed(74684)
-rf3 <- train(D_group  ~ .,
-             data = sm4,
-             method = "rf",
-             trControl = ctrl2,
-             tuneGrid = grid,
-             metric = "ROC")
-
-plot(rf3)
-plot(varImp(rf3), top = 20)
+rf_f
+plot(rf_f)
+confusionMatrix(rf_f)
+plot(varImp(rf_f))
 
 ## 06: Boosting
 
@@ -238,72 +199,52 @@ grid <- expand.grid(max_depth = c(3, 5, 7, 9),
                     gamma = 0,
                     colsample_bytree = 1)
 
-set.seed(74684)
-xgb1 <- train(G_group  ~ .,
-              data = sm1,
-              method = "xgbTree",
-              trControl = ctrl1,
-              tuneGrid = grid,
-              metric = "AUC")
+set.seed(83357)
+xgb_f <- train(D_group  ~ .,
+               data = sm1,
+               method = "xgbTree",
+               trControl = ctrl,
+               tuneGrid = grid,
+               metric = "logLoss")
 
-xgb1
-plot(xgb1)
-confusionMatrix(xgb1)
-plot(varImp(xgb1))
-
-set.seed(74684)
-xgb2 <- train(D_group  ~ .,
-              data = sm2,
-              method = "xgbTree",
-              trControl = ctrl2,
-              tuneGrid = grid,
-              metric = "ROC")
-
-xgb2
-plot(xgb2)
-confusionMatrix(xgb2)
-plot(varImp(xgb2))
-
-set.seed(74684)
-xgb3 <- train(D_group  ~ .,
-              data = sm4,
-              method = "xgbTree",
-              trControl = ctrl2,
-              tuneGrid = grid,
-              metric = "ROC")
-
-plot(xgb3)
-plot(varImp(xgb3), top = 20)
+xgb_f
+plot(xgb_f)
+confusionMatrix(xgb_f)
+plot(varImp(xgb_f))
 
 ## 06: Comparison
 
 ## Prediction in training set (CV)
 
-resamps1 <- resamples(list(glmnet = glmnet1,
-                           ctree = ctree1,
-                           rf = rf1,
-                           xgb = xgb1))
+resamps_f <- resamples(list(GLMnet = glmnet_f,
+                             CTREE = ctree_f,
+                             RF = rf_f,
+                             XGBoost = xgb_f))
 
-resamps1
-summary(resamps1)
-bwplot(resamps1)
+resamps_f
+summary(resamps_f)
+bwplot(resamps_f)
 
-resamps2 <- resamples(list(glmnet = glmnet2,
-                           ctree = ctree2,
-                           rf = rf2,
-                           xgb = xgb2))
+resamp_f <- 
+  reshape(resamps_f$values,
+          direction = "long",
+          varying = 2:ncol(resamps_f$values),
+          sep = "~",
+          v.names = c("Accuracy", "Kappa", "logLoss", "ROC", "Sens", "Spec"),
+          timevar = "model")
 
-resamps2
-summary(resamps2)
-bwplot(resamps2)
+resamp_f <- 
+  resamp_f %>%
+  mutate(model = factor(model)) %>%
+  mutate(model = fct_recode(model,
+                            "GLMnet" = "1",
+                            "CTREE" = "2",
+                            "RF" = "3",
+                            "XGBoost" = "4"))
 
-resamps3 <- resamples(list(glmnet = glmnet3,
-                           ctree = ctree3,
-                           rf = rf3,
-                           xgb = xgb3))
-
-resamps3
-summary(resamps3)
-bwplot(resamps3)
-
-# save(glmnet1, glmnet2, ctree1, ctree2, rf1, rf2, xgb1, xgb2, file = "output2.Rdata")
+save(sm1, resamp_f,
+     glmnet_f, 
+     ctree_f,
+     rf_f,
+     xgb_f,
+     file = "./src/output2.Rdata")
