@@ -86,12 +86,12 @@ table(SM_Final$D_group, useNA = "always")
 
 # nearZeroVar(SM_Final)
 
-motionvars <- grep("SM[123456789]" , names(SM_Final), value = TRUE)
+motionvars <- grep("SM[123456789]", names(SM_Final), value = TRUE)
 
 SM_Final <- 
   SM_Final %>%
   arrange(ID, var) %>%
-  filter(!is.na(SM1))
+  filter(!is.na(SM10))
 
 sm <-
   SM_Final %>%
@@ -111,9 +111,12 @@ sm <-
   mutate(SM_q9 = rowQuantiles(as.matrix(.), probs = 0.9, na.rm = T)) %>%
   mutate(SM_q95 = rowQuantiles(as.matrix(.), probs = 0.95, na.rm = T)) %>%
   select(SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95) %>%
-  bind_cols(SM_Final, .)
+  bind_cols(SM_Final, .) %>%
+  filter(SM_max > 0.00)
+# filter(!ID %in% c(305508344, 305598322, 305601947, 305611802, 305644466))
 
-sm1 <- select(sm, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
+sm1 <- select(sm, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95) 
+sm2 <- select(sm, motionvars[1:10], D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
 
 ## 02: Tuning Setup
 
@@ -138,7 +141,7 @@ grid <- expand.grid(alpha = c(0, 0.5, 1),
                     lambda = seq(0.1, 0, length = 30))
 
 set.seed(83357)
-glmnet_f <- train(D_group  ~ .,
+glmnet_f1 <- train(D_group  ~ .,
                   data = sm1,
                   method = "glmnet",
                   family = "binomial",
@@ -146,27 +149,54 @@ glmnet_f <- train(D_group  ~ .,
                   tuneGrid = grid,
                   metric = "logLoss")
 
-glmnet_f
-plot(glmnet_f)
-confusionMatrix(glmnet_f)
-plot(varImp(glmnet_f))
+glmnet_f1
+plot(glmnet_f1)
+confusionMatrix(glmnet_f1)
+plot(varImp(glmnet_f1))
+
+set.seed(83357)
+glmnet_f2 <- train(D_group  ~ .,
+                   data = sm2,
+                   method = "glmnet",
+                   family = "binomial",
+                   trControl = ctrl,
+                   tuneGrid = grid,
+                   metric = "logLoss")
+
+glmnet_f2
+plot(glmnet_f2)
+confusionMatrix(glmnet_f2)
+plot(varImp(glmnet_f2))
 
 ## 04: CTREE
 
 grid <- expand.grid(mincriterion = c(0.99, 0.95, 0.90, 0.85, 0.75))
 
 set.seed(83357)
-ctree_f <- train(D_group  ~ .,
+ctree_f1 <- train(D_group  ~ .,
                  data = sm1,
                  method = "ctree",
                  trControl = ctrl,
                  tuneGrid = grid,
                  metric = "logLoss")
 
-ctree_f
-plot(ctree_f)
-confusionMatrix(ctree_f)
-plot(ctree_f$finalModel)
+ctree_f1
+plot(ctree_f1)
+confusionMatrix(ctree_f1)
+plot(ctree_f1$finalModel)
+
+set.seed(83357)
+ctree_f2 <- train(D_group  ~ .,
+                  data = sm2,
+                  method = "ctree",
+                  trControl = ctrl,
+                  tuneGrid = grid,
+                  metric = "logLoss")
+
+ctree_f2
+plot(ctree_f2)
+confusionMatrix(ctree_f2)
+plot(ctree_f2$finalModel)
 
 ## 05: Random Forest and Extra Trees
 
@@ -176,7 +206,7 @@ grid <- expand.grid(mtry = c(round(sqrt(cols)), round(log(cols))),
                     min.node.size = 15)
 
 set.seed(83357)
-rf_f <- train(D_group  ~ .,
+rf_f1 <- train(D_group  ~ .,
               data = sm1,
               method = "ranger",
               trControl = ctrl,
@@ -184,10 +214,24 @@ rf_f <- train(D_group  ~ .,
               metric = "logLoss",
               importance = "impurity")
 
-rf_f
-plot(rf_f)
-confusionMatrix(rf_f)
-plot(varImp(rf_f))
+rf_f1
+plot(rf_f1)
+confusionMatrix(rf_f1)
+plot(varImp(rf_f1))
+
+set.seed(83357)
+rf_f2 <- train(D_group  ~ .,
+               data = sm2,
+               method = "ranger",
+               trControl = ctrl,
+               tuneGrid = grid,
+               metric = "logLoss",
+               importance = "impurity")
+
+rf_f2
+plot(rf_f2)
+confusionMatrix(rf_f2)
+plot(varImp(rf_f2))
 
 ## 06: Boosting
 
@@ -200,41 +244,54 @@ grid <- expand.grid(max_depth = c(3, 5, 7, 9),
                     colsample_bytree = 1)
 
 set.seed(83357)
-xgb_f <- train(D_group  ~ .,
+xgb_f1 <- train(D_group  ~ .,
                data = sm1,
                method = "xgbTree",
                trControl = ctrl,
                tuneGrid = grid,
                metric = "logLoss")
 
-xgb_f
-plot(xgb_f)
-confusionMatrix(xgb_f)
-plot(varImp(xgb_f))
+xgb_f1
+plot(xgb_f1)
+confusionMatrix(xgb_f1)
+plot(varImp(xgb_f1))
+
+set.seed(83357)
+xgb_f2 <- train(D_group  ~ .,
+                data = sm2,
+                method = "xgbTree",
+                trControl = ctrl,
+                tuneGrid = grid,
+                metric = "logLoss")
+
+xgb_f2
+plot(xgb_f2)
+confusionMatrix(xgb_f2)
+plot(varImp(xgb_f2))
 
 ## 06: Comparison
 
 ## Prediction in training set (CV)
 
-resamps_f <- resamples(list(GLMnet = glmnet_f,
-                             CTREE = ctree_f,
-                             RF = rf_f,
-                             XGBoost = xgb_f))
+resamps_f1 <- resamples(list(GLMnet = glmnet_f1,
+                             CTREE = ctree_f1,
+                             RF = rf_f1,
+                             XGBoost = xgb_f1))
 
-resamps_f
-summary(resamps_f)
-bwplot(resamps_f)
+resamps_f1
+summary(resamps_f1)
+bwplot(resamps_f1)
 
-resamp_f <- 
-  reshape(resamps_f$values,
+resamp_f1 <- 
+  reshape(resamps_f1$values,
           direction = "long",
-          varying = 2:ncol(resamps_f$values),
+          varying = 2:ncol(resamps_f1$values),
           sep = "~",
           v.names = c("Accuracy", "Kappa", "logLoss", "ROC", "Sens", "Spec"),
           timevar = "model")
 
-resamp_f <- 
-  resamp_f %>%
+resamp_f1 <- 
+  resamp_f1 %>%
   mutate(model = factor(model)) %>%
   mutate(model = fct_recode(model,
                             "GLMnet" = "1",
@@ -242,9 +299,9 @@ resamp_f <-
                             "RF" = "3",
                             "XGBoost" = "4"))
 
-save(sm1, resamp_f,
-     glmnet_f, 
-     ctree_f,
-     rf_f,
-     xgb_f,
+save(sm1, resamp_f1,
+     glmnet_f1, 
+     ctree_f1,
+     rf_f1,
+     xgb_f1,
      file = "./src/output2.Rdata")
