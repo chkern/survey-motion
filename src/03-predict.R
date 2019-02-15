@@ -15,8 +15,8 @@ library(caret)
 
 setwd("/home/ckern/Uni/Forschung/Article/2019 - MASS")
 load("./src/output1.Rdata")
-load("./data/G_Test_SM.RData")
-load("./data/G_Test_full.RData")
+load("./data/G_Test_SM.RData") # long format
+load("./data/G_Test_full.RData") # wide format
 
 # X
 
@@ -134,7 +134,7 @@ table(p_ctree_l2, p_rf_l2)
 table(p_ctree_l2, p_xgb_l2)
 table(p_rf_l2, p_xgb_l2)
 
-# 06: Join with full data (long and wide)
+# 06: Join with full data (long)
 
 G_test_SM <- 
   cbind(G_test_SM, 
@@ -154,20 +154,43 @@ ML_sub <- ML %>%
                     M_1_Answ_1, M_1_Completion_Time, M_1_SF_OFF,
                     M_2_Answ_1, M_2_Completion_Time, M_2_SF_OFF)
 
+ML_sub <-
+  ML_sub %>% # Completion time in seconds
+  mutate(E1_Completion_Time_s = E1_Completion_Time * 0.001,
+         E2_Completion_Time_s = E2_Completion_Time * 0.001,
+         E3_Completion_Time_s = E3_Completion_Time * 0.001,
+         E4_Completion_Time_s = E4_Completion_Time * 0.001,
+         E5_Completion_Time_s = E5_Completion_Time * 0.001,
+         E6_Completion_Time_s = E6_Completion_Time * 0.001,
+         E7_Completion_Time_s = E7_Completion_Time * 0.001,
+         E8_Completion_Time_s = E8_Completion_Time * 0.001,
+         M_1_Completion_Time_s = M_1_Completion_Time * 0.001,
+         M_2_Completion_Time_s = M_2_Completion_Time * 0.001)
+
+cln_outliers <- function(x){ # Completion time outliers to NA
+  lower <- quantile(x, probs = 0.05, na.rm = T)
+  upper <- quantile(x, probs = 0.95, na.rm = T)
+  x[x < lower] <- NA
+  x[x > upper] <- NA
+  return(x)
+}
+
+ML_sub[, 36:45] <- lapply(ML_sub[, 36:45], cln_outliers)
+
 ML_long <- reshape(ML_sub, direction = "long", 
-        varying = c("E1_Answ_1", "E1_Completion_Time", "E1_SF_OFF",
-                  "E2_Answ_1", "E2_Completion_Time", "E2_SF_OFF",
-                  "E3_Answ_1", "E3_Completion_Time", "E3_SF_OFF",
-                  "E4_Answ_1", "E4_Completion_Time", "E4_SF_OFF",
-                  "E5_Answ_1", "E5_Completion_Time", "E5_SF_OFF",
-                  "E6_Answ_1", "E6_Completion_Time", "E6_SF_OFF",
-                  "E7_Answ_1", "E7_Completion_Time", "E7_SF_OFF",
-                  "E8_Answ_1", "E8_Completion_Time", "E8_SF_OFF",
-                  "M_1_Answ_1", "M_1_Completion_Time", "M_1_SF_OFF",
-                  "M_2_Answ_1", "M_2_Completion_Time", "M_2_SF_OFF"), 
+        varying = c("E1_Answ_1", "E1_Completion_Time", "E1_Completion_Time_s", "E1_SF_OFF",
+                  "E2_Answ_1", "E2_Completion_Time", "E2_Completion_Time_s", "E2_SF_OFF",
+                  "E3_Answ_1", "E3_Completion_Time", "E3_Completion_Time_s", "E3_SF_OFF",
+                  "E4_Answ_1", "E4_Completion_Time", "E4_Completion_Time_s", "E4_SF_OFF",
+                  "E5_Answ_1", "E5_Completion_Time", "E5_Completion_Time_s", "E5_SF_OFF",
+                  "E6_Answ_1", "E6_Completion_Time", "E6_Completion_Time_s", "E6_SF_OFF",
+                  "E7_Answ_1", "E7_Completion_Time", "E7_Completion_Time_s", "E7_SF_OFF",
+                  "E8_Answ_1", "E8_Completion_Time", "E8_Completion_Time_s", "E8_SF_OFF",
+                  "M_1_Answ_1", "M_1_Completion_Time", "M_1_Completion_Time_s", "M_1_SF_OFF",
+                  "M_2_Answ_1", "M_2_Completion_Time", "M_2_Completion_Time_s", "M_2_SF_OFF"), 
         timevar = "page",
         times = c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "M_1", "M_2"),
-        v.names = c("Answ_1", "Completion_Time", "SF_OFF"),
+        v.names = c("Answ_1", "Completion_Time", "Completion_Time_s", "SF_OFF"),
         idvar = "ID")
 
 G_test_long <-
@@ -185,60 +208,7 @@ G_test_long <-
   left_join(G_test_SM, by = c("ID" = "ID", "page" = "page")) %>%
   arrange(ID, page)
 
-# Set completion time outliers to NA
-
-G_test_long$Completion_Time_s <- G_test_long$Completion_Time * 0.001
-G_test_long$Completion_Time_sc <- G_test_long$Completion_Time_s
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E1"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E1"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E1"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E1"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E2"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E2"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E2"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E2"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E3"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E3"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E3"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E3"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E4"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E4"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E4"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E4"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E5"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E5"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E5"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E5"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E6"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E6"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E6"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E6"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E7"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E7"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E7"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E7"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E8"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Single_E8"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Single_E8"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Single_E8"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Matrix_1"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Matrix_1"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Matrix_1"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Matrix_1"] <- NA
-
-lower <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Matrix_2"], probs = 0.05, na.rm = T)
-upper <- quantile(G_test_long$Completion_Time_s[G_test_long$page == "Matrix_2"], probs = 0.95, na.rm = T)
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s < lower & G_test_long$page == "Matrix_2"] <- NA
-G_test_long$Completion_Time_sc[G_test_long$Completion_Time_s > upper & G_test_long$page == "Matrix_2"] <- NA
+# 07: Join with full data (wide)
 
 G_test_a <- # Aggregate by mode of predicted classes over pages
   G_test_SM %>%
@@ -306,15 +276,22 @@ ML_sub <-
          Demo_Answ_1, Demo_Answ_2, Demo_Answ_3, Demo_Answ_4, Demo_Answ_5,
          Demo_Completion_Time, Demo_SF_OFF)
 
+ML_sub <-
+  ML_sub %>%
+  mutate_at(c("SemDiff_Answ_1", "SemDiff_Answ_2", "SemDiff_Answ_3", "SemDiff_Answ_4", "SemDiff_Answ_5",  # 0 to NA
+              "Motivation_Answ_1", "Particip_Answ_1", "Multitasking_1_Answ_1"), list(~na_if(., 0))) %>%
+  mutate_at(c("E1_SF_OFF", "E2_SF_OFF", "E3_SF_OFF", "E4_SF_OFF", "E5_SF_OFF", "E6_SF_OFF", "E7_SF_OFF", # NA to 0
+              "E8_SF_OFF", "M_1_SF_OFF", "M_2_SF_OFF"), list(~replace_na(., 0))) %>%
+  mutate(AC_Answ = ifelse(AC_Answ_10 == 1 & AC_Answ_15 == 1, 1, 0)) %>%          # Attention check correct
+  mutate(Multitasking_1_Answ = ifelse(Multitasking_1_Answ_1 == 1, 1, 0)) %>%     # Multitasking dummy
+  mutate(Multitasking_2_Answ = rowSums(ML_sub[, 83:88]))                         # Multitasking index
+  
+ML_sub$E1_M2_Missing <- apply(ML_sub[, c(6,9,12,15,18,21,24,27,30:37,40:47)], 1, # Missing index for E1 - M_2
+                              function(x) {sum(x == 0, na.rm = TRUE)})
+ML_sub$E1_M2_Missing[ML_sub$Completed == 22] <- NA
+ 
 G_test_wide <-
   ML_sub %>%
-  mutate_at(c("SemDiff_Answ_1", "SemDiff_Answ_2", "SemDiff_Answ_3", "SemDiff_Answ_4", "SemDiff_Answ_5",
-              "Motivation_Answ_1", "Particip_Answ_1", "Multitasking_1_Answ_1"), list(~na_if(., 0))) %>%
-  mutate_at(c("E1_SF_OFF", "E2_SF_OFF", "E3_SF_OFF", "E4_SF_OFF", "E5_SF_OFF", "E6_SF_OFF", "E7_SF_OFF", 
-              "E8_SF_OFF", "M_1_SF_OFF", "M_2_SF_OFF"), list(~replace_na(., 0))) %>%
-  mutate(AC_Answ = ifelse(AC_Answ_10 == 1 & AC_Answ_15 == 1, 1, 0)) %>%
-  mutate(Multitasking_1_Answ = ifelse(Multitasking_1_Answ_1 == 1, 1, 0)) %>%
-  mutate(Multitasking_2_Answ = rowSums(ML_sub[, 83:88])) %>%
   left_join(G_test_a, by = "ID") %>%
   left_join(G_test_s, by = "ID")
 

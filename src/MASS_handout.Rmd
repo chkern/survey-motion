@@ -21,7 +21,7 @@ abstract: "Participation in web surveys via smartphones increased continuously i
 ---
 
 ```{r, include = FALSE}
-knitr::opts_knit$set(root.dir = "U:\\Forschung\\Article\\2019 - MASS",
+knitr::opts_knit$set(root.dir = "E:\\Uni\\Forschung\\Article\\2019 - MASS",
               fig.pos = "H")
 load("..\\src\\output1.Rdata")
 load("..\\src\\output3.Rdata")
@@ -48,7 +48,7 @@ Against this background, this study addresses the following research questions:
 1. Can we accurately predict respondents completion conditions by using acceleration data?
 2. Do respondents with different completion conditions (motion levels) differ in terms of response behavior?
 
-Concept: Utilizing acceleration data data from smartphone sensors and machine learning (ML) methods to infer completion conditions
+Concept: Utilizing acceleration data from smartphone sensors and machine learning (ML) methods to infer completion conditions
   
 ## SurveyMotion
 
@@ -342,7 +342,7 @@ g7 <- G_test_long %>%
   drop_na(p_rf_l2) %>%
   filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
   ggplot() +
-  geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  geom_boxplot(aes(y = Completion_Time_s, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "Completion Time", x = "") +
   theme_light() +
   theme(legend.position = "none",
@@ -354,7 +354,7 @@ g8 <- G_test_long %>%
   drop_na(p_rf_l2) %>%
   filter(page %in% c("Matrix_1", "Matrix_2")) %>%
   ggplot() +
-  geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  geom_boxplot(aes(y = Completion_Time_s, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "", x = "") +
   guides(color = guide_legend(title = "")) +
   theme_light() +
@@ -368,12 +368,12 @@ grid.arrange(g7, g8, nrow = 1)
 ```{r echo = FALSE, warning = FALSE}
 t1 <- G_test_long %>%
   filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
-  t.test(Completion_Time_sc ~ p_rf_l2, data = .) %>%
+  t.test(Completion_Time_s ~ p_rf_l2, data = .) %>%
   tidy(.)
 
 t2 <- G_test_long %>%
   filter(page %in% c("Matrix_1", "Matrix_2")) %>%
-  t.test(Completion_Time_sc ~ p_rf_l2, data = .) %>%
+  t.test(Completion_Time_s ~ p_rf_l2, data = .) %>%
   tidy(.)
 
 dat <- rbind(t1[, 2:5], t2[, 2:5])
@@ -420,7 +420,7 @@ colnames(dat) <- c("m(moving)", "m(not moving)", "statistic", "p.value")
 kable(dat, digits = 3, caption = "Attention check and multitasking by predicted completion conditions")
 ```
 
-Table 5 summarizes survey evaluation items between predicted completion conditions and reports  corresponding t-test results.
+Table 5 summarizes survey evaluation items between predicted completion conditions and reports corresponding t-test results.
 
 * Motivation: Motivation to participate in survey, 1 = "very high", ..., 5 = "very low"
 * Boring, ..., Monotonous: Survey evaluation, 7 point semantic differential scale
