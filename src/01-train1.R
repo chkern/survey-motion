@@ -18,6 +18,8 @@ library(party)
 library(partykit)
 library(ranger)
 library(xgboost)
+library(gridExtra)
+library(xtable)
 
 setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
 load("./data/G_Train.RData")
@@ -72,6 +74,80 @@ sm1 <- select(sm, G_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_m
 sm2 <- select(sm, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
 sm3 <- select(sm, motionvars[5:50], G_group, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
 
+# Examples of TA profiles
+
+rawmotion <- grep("SM_[0123456789]", names(sm), value = TRUE)
+row.names(sm) <- paste0("SM_", row.names(sm))
+
+set.seed(25986)
+
+p1 <- sm %>%
+  filter(Group == 1 & page == "Matrix") %>%
+  sample_n(1) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.75, size = 0.2) + 
+  #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
+  ylim(0, 5) +
+  labs(x = "Time", y = "TA", title = "Sitting") +
+  theme_light(base_size = 9) +
+  theme(legend.position = "none")
+
+p2 <- sm %>%
+  filter(Group == 2 & page == "Matrix") %>%
+  sample_n(1) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.75, size = 0.2) + 
+  #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
+  ylim(0, 5) +
+  labs(x = "Time", y = "TA", title = "Standing") +
+  theme_light(base_size = 9) +
+  theme(legend.position = "none")
+
+p3 <- sm %>%
+  filter(Group == 3 & page == "Matrix") %>%
+  sample_n(1) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.75, size = 0.2) + 
+  #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
+  ylim(0, 15) +
+  labs(x = "Time", y = "TA", title = "Walking") +
+  theme_light(base_size = 9) +
+  theme(legend.position = "none")
+
+p4 <- sm %>%
+  filter(Group == 4 & page == "Matrix") %>%
+  sample_n(1) %>%
+  select(rawmotion) %>%
+  rownames_to_column %>%
+  gather(var, value, -rowname) %>%
+  mutate(var = as.numeric(gsub("SM_", "", var))) %>%
+  filter(var < 2000) %>%
+  ggplot() + 
+  geom_line(aes(x = var, y = value, group = rowname), alpha = 0.75, size = 0.2) + 
+  #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
+  ylim(0, 15) +
+  labs(x = "Time", y = "TA", title = "Climbing") +
+  theme_light(base_size = 9) +
+  theme(legend.position = "none")
+
+plots <- arrangeGrob(p1, p2, p3, p4, nrow = 2)
+ggsave("p1_TA_examples.pdf", plots, width = 7.5, height = 6)
+
 ## 02: Tuning Setup
 
 # k = length(unique(sm$ID))
@@ -115,8 +191,9 @@ glmnet_l1 <- train(G_group  ~ .,
 
 glmnet_l1
 plot(glmnet_l1)
-confusionMatrix(glmnet_l1)
 plot(varImp(glmnet_l1))
+tab <- xtable(confusionMatrix(glmnet_l1)$table, digits = 3)
+print(tab, type = "latex", file = "t1_glmnet1.tex")
 
 set.seed(74684)
 glmnet_l2 <- train(D_group  ~ .,
@@ -129,8 +206,9 @@ glmnet_l2 <- train(D_group  ~ .,
 
 glmnet_l2
 plot(glmnet_l2)
-confusionMatrix(glmnet_l2)
 plot(varImp(glmnet_l2))
+tab <- xtable(confusionMatrix(glmnet_l2)$table, digits = 3)
+print(tab, type = "latex", file = "t1_glmnet2.tex")
 
 set.seed(74684)
 glmnet_l3 <- train(D_group  ~ . - G_group,
@@ -158,8 +236,9 @@ ctree_l1 <- train(G_group  ~ .,
 
 ctree_l1
 plot(ctree_l1)
-confusionMatrix(ctree_l1)
-plot(ctree_l1$finalModel)
+plot(varImp(ctree_l1))
+tab <- xtable(confusionMatrix(ctree_l1)$table, digits = 3)
+print(tab, type = "latex", file = "t1_ctree_1.tex")
 
 set.seed(74684)
 ctree_l2 <- train(D_group  ~ .,
@@ -171,8 +250,9 @@ ctree_l2 <- train(D_group  ~ .,
 
 ctree_l2
 plot(ctree_l2)
-confusionMatrix(ctree_l2)
-plot(ctree_l2$finalModel)
+plot(varImp(ctree_l2))
+tab <- xtable(confusionMatrix(ctree_l2)$table, digits = 3)
+print(tab, type = "latex", file = "t1_ctree_2.tex")
 
 set.seed(74684)
 ctree_l3 <- train(D_group  ~ . - G_group,
@@ -203,8 +283,9 @@ rf_l1 <- train(G_group  ~ .,
 
 rf_l1
 plot(rf_l1)
-confusionMatrix(rf_l1)
 plot(varImp(rf_l1), top = 20)
+tab <- xtable(confusionMatrix(rf_l1)$table, digits = 3)
+print(tab, type = "latex", file = "t1_rf_1.tex")
 
 set.seed(74684)
 rf_l2 <- train(D_group  ~ .,
@@ -217,8 +298,9 @@ rf_l2 <- train(D_group  ~ .,
 
 rf_l2
 plot(rf_l2)
-confusionMatrix(rf_l2)
 plot(varImp(rf_l2), top = 20)
+tab <- xtable(confusionMatrix(rf_l2)$table, digits = 3)
+print(tab, type = "latex", file = "t1_rf_2.tex")
 
 cols <- ncol(model.matrix(G_group  ~ . - D_group, data = sm3)[,-1])
 grid <- expand.grid(mtry = c(round(sqrt(cols)), round(log(cols))),
@@ -257,8 +339,9 @@ xgb_l1 <- train(G_group  ~ .,
 
 xgb_l1
 plot(xgb_l1)
-confusionMatrix(xgb_l1)
 plot(varImp(xgb_l1))
+tab <- xtable(confusionMatrix(xgb_l1)$table, digits = 3)
+print(tab, type = "latex", file = "t1_xgb_1.tex")
 
 set.seed(74684)
 xgb_l2 <- train(D_group  ~ .,
@@ -270,8 +353,9 @@ xgb_l2 <- train(D_group  ~ .,
 
 xgb_l2
 plot(xgb_l2)
-confusionMatrix(xgb_l2)
 plot(varImp(xgb_l2))
+tab <- xtable(confusionMatrix(xgb_l2)$table, digits = 3)
+print(tab, type = "latex", file = "t1_xgb_2.tex")
 
 set.seed(74684)
 xgb_l3 <- train(D_group  ~ . - G_group,
@@ -287,6 +371,7 @@ plot(varImp(xgb_l3), top = 20)
 ## 06: Comparison
 
 ## Prediction in training set (CV)
+# G_group
 
 resamps_l1 <- resamples(list(GLMnet = glmnet_l1,
                              CTREE = ctree_l1,
@@ -316,6 +401,28 @@ resamp_l1 <-
                             "RF" = "3",
                             "XGBoost" = "4"))
 
+p1 <- ggplot(resamp_l1) +
+  geom_boxplot(aes(y = AUC, x = fct_rev(model), fill = model)) +
+  ylim(0.5, 1) +
+  labs(x = "") +
+  labs(y = "ROC-AUC") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+p2 <- ggplot(resamp_l1) +
+  geom_boxplot(aes(y = logLoss, x = fct_rev(model), fill = model)) +
+  labs(x = "") +
+  labs(y = "logLoss") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+plots <- arrangeGrob(p1, p2, nrow = 1)
+ggsave("p1_CV_perf1.pdf", plots, width = 8, height = 6)
+
+# D_group
+
 resamps_l2 <- resamples(list(GLMnet = glmnet_l2,
                              CTREE = ctree_l2,
                              RF = rf_l2,
@@ -342,6 +449,28 @@ resamp_l2 <-
                             "RF" = "3",
                             "XGBoost" = "4"))
 
+p3 <- ggplot(resamp_l2) +
+  geom_boxplot(aes(y = ROC, x = fct_rev(model), fill = model)) +
+  ylim(0.5, 1) +
+  labs(x = "") +
+  labs(y = "ROC-AUC") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+p4 <- ggplot(resamp_l2) +
+  geom_boxplot(aes(y = logLoss, x = fct_rev(model), fill = model)) +
+  labs(x = "") +
+  labs(y = "logLoss") +
+  coord_flip() + 
+  theme_light() +
+  theme(legend.position = "none")
+
+plots <- arrangeGrob(p3, p4, nrow = 1)
+ggsave("p1_CV_perf2.pdf", plots, width = 8, height = 6)
+
+# D_group + raw motion
+
 resamps_l3 <- resamples(list(GLMnet = glmnet_l3,
                              CTREE = ctree_l3,
                              RF = rf_l3,
@@ -367,6 +496,8 @@ resamp_l3 <-
                             "CTREE" = "2",
                             "RF" = "3",
                             "XGBoost" = "4"))
+
+# Save results
 
 save(sm, resamp_l1, resamp_l2, resamp_l3, 
      glmnet_l1, glmnet_l2, glmnet_l3, 
