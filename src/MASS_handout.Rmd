@@ -21,7 +21,7 @@ abstract: "Participation in web surveys via smartphones increased continuously i
 ---
 
 ```{r, include = FALSE}
-knitr::opts_knit$set(root.dir = "E:\\Uni\\Forschung\\Article\\2019 - MASS",
+knitr::opts_knit$set(root.dir = "U:\\Forschung\\Article\\2019 - MASS",
               fig.pos = "H")
 load("..\\src\\output1.Rdata")
 load("..\\src\\output3.Rdata")
@@ -283,19 +283,19 @@ gt3 <- ggplot(sm) +
         legend.text = element_text(size = 6),
         legend.title = element_blank())
 
-gt4 <- ggplot(G_test_long) +
+gt4 <- ggplot(G_test_long1) +
   geom_density(aes(x = SM_mean)) +
   xlim(0, 4) +
   labs(title = "Test data") +
   theme_light(base_size = 9)
 
-gt5 <- ggplot(G_test_long) +
+gt5 <- ggplot(G_test_long1) +
   geom_density(aes(x = SM_var)) +
   xlim(0, 2) +
   labs(title = "") +
   theme_light(base_size = 9)
 
-gt6 <- ggplot(G_test_long) +
+gt6 <- ggplot(G_test_long1) +
   geom_density(aes(x = SM_max)) +
   xlim(0, 20) +
   labs(title = "") +
@@ -309,7 +309,7 @@ grid.arrange(gt1, gt2, gt3, gt4, gt5, gt6, nrow = 2)
 Figure 5 displays the proportions of predicted completion conditions in the test data based on random forest models (trained with lab data).
 
 ```{r echo = FALSE, out.width = '70%', fig.align = "center", fig.cap = "Predicted completion conditions (RF)"}
-g5 <- ggplot(G_test_long) +
+g5 <- ggplot(G_test_long1) +
   geom_mosaic(aes(x = product(p_rf_l1, page), fill = p_rf_l1), na.rm = TRUE) +
   labs(y = "", x = "", title = "4 class outcome") +
   theme_light()  +
@@ -318,7 +318,7 @@ g5 <- ggplot(G_test_long) +
                                 hjust = 1,
                                 vjust = 1))
 
-g6 <- ggplot(G_test_long) +
+g6 <- ggplot(G_test_long1) +
   geom_mosaic(aes(x = product(p_rf_l2, page), fill = p_rf_l2), na.rm = TRUE) +
   labs(y = "", x = "", title = "2 class outcome") +
   theme_light()  +
@@ -338,11 +338,11 @@ Unit of observation: Respondent-pages
 Figure 6 compares completion times (in seconds) for eight single question pages and two survey pages with grid questions between predicted completion conditions (moving, not moving). Mean completion times for both groups and corresponding t-test results are shown in Table 3.
 
 ```{r echo = FALSE, warning = FALSE, out.width = '70%', fig.align = "center", fig.cap = "Completion times by predicted completion conditions"}
-g7 <- G_test_long %>%
+g7 <- G_test_long1 %>%
   drop_na(p_rf_l2) %>%
   filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
   ggplot() +
-  geom_boxplot(aes(y = Completion_Time_s, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "Completion Time", x = "") +
   theme_light() +
   theme(legend.position = "none",
@@ -350,11 +350,11 @@ g7 <- G_test_long %>%
                                 hjust = 1,
                                 vjust = 1))
 
-g8 <- G_test_long %>%
+g8 <- G_test_long1 %>%
   drop_na(p_rf_l2) %>%
   filter(page %in% c("Matrix_1", "Matrix_2")) %>%
   ggplot() +
-  geom_boxplot(aes(y = Completion_Time_s, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "", x = "") +
   guides(color = guide_legend(title = "")) +
   theme_light() +
@@ -366,14 +366,14 @@ grid.arrange(g7, g8, nrow = 1)
 ```
 
 ```{r echo = FALSE, warning = FALSE}
-t1 <- G_test_long %>%
+t1 <- G_test_long1 %>%
   filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
-  t.test(Completion_Time_s ~ p_rf_l2, data = .) %>%
+  t.test(Completion_Time_sc ~ p_rf_l2, data = .) %>%
   tidy(.)
 
-t2 <- G_test_long %>%
+t2 <- G_test_long1 %>%
   filter(page %in% c("Matrix_1", "Matrix_2")) %>%
-  t.test(Completion_Time_s ~ p_rf_l2, data = .) %>%
+  t.test(Completion_Time_sc ~ p_rf_l2, data = .) %>%
   tidy(.)
 
 dat <- rbind(t1[, 2:5], t2[, 2:5])

@@ -12,7 +12,11 @@ library(broom)
 library(caret)
 library(gridExtra)
 library(ggmosaic)
+library(car)
+library(lme4)
+library(lmerTest)
 library(xtable)
+library(stargazer)
 
 setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
 load("./src/output1.Rdata")
@@ -43,19 +47,19 @@ gt3 <- ggplot(sm) +
         legend.text = element_text(size = 6),
         legend.title = element_blank())
 
-gt4 <- ggplot(G_test_long) +
+gt4 <- ggplot(G_test_long1) +
   geom_density(aes(x = SM_mean)) +
   xlim(0, 4) +
   labs(title = "Test data") +
   theme_light(base_size = 9)
 
-gt5 <- ggplot(G_test_long) +
+gt5 <- ggplot(G_test_long1) +
   geom_density(aes(x = SM_var)) +
   xlim(0, 2) +
   labs(title = "") +
   theme_light(base_size = 9)
 
-gt6 <- ggplot(G_test_long) +
+gt6 <- ggplot(G_test_long1) +
   geom_density(aes(x = SM_max)) +
   xlim(0, 20) +
   labs(title = "") +
@@ -66,7 +70,7 @@ ggsave("p4_TA_distributions.pdf", plots, width = 8, height = 6)
 
 ## 03: Class prediction
 
-g1 <- ggplot(G_test_long) +
+g1 <- ggplot(G_test_long1) +
   geom_mosaic(aes(x = product(p_rf_l1, page), fill = p_rf_l1), na.rm = TRUE) +
   labs(y = "", x = "") +
   theme_light()  +
@@ -77,7 +81,7 @@ g1 <- ggplot(G_test_long) +
 
 ggsave("p4_class_preds1.pdf", width = 4, height = 5.5)
 
-g2 <- ggplot(G_test_long) +
+g2 <- ggplot(G_test_long1) +
   geom_mosaic(aes(x = product(p_rf_l2, page), fill = p_rf_l2), na.rm = TRUE) +
   labs(y = "", x = "") +
   theme_light()  +
@@ -91,11 +95,11 @@ ggsave("p4_class_preds2.pdf", width = 4, height = 5.5)
 ## 04: Compare groups (page level)
 # Completion Times - plots
 
-g3 <- G_test_long %>%
+g3 <- G_test_long1 %>%
   drop_na(p_rf_l2) %>%
   filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
   ggplot() +
-  geom_boxplot(aes(y = Completion_Time_s, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "Completion Time", x = "") +
   theme_light() +
   theme(legend.position = "none",
@@ -103,11 +107,11 @@ g3 <- G_test_long %>%
                                    hjust = 1,
                                    vjust = 1))
 
-g4 <- G_test_long %>%
+g4 <- G_test_long1 %>%
   drop_na(p_rf_l2) %>%
   filter(page %in% c("Matrix_1", "Matrix_2")) %>%
   ggplot() +
-  geom_boxplot(aes(y = Completion_Time_s, x = page, color = p_rf_l2), outlier.size = 0.1) +
+  geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "", x = "") +
   guides(color = guide_legend(title = "")) +
   theme_light() +
@@ -118,26 +122,97 @@ g4 <- G_test_long %>%
 plots <- arrangeGrob(g3, g4, nrow = 1)
 ggsave("p4_resp_times.pdf", plots, width = 7, height = 5.5)
 
-# Completion Times - table
+# Completion Times - tests
 
-t1 <- G_test_long %>%
-  filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
-  t.test(Completion_Time_s ~ p_rf_l2, data = .) %>%
-  tidy(.)
+G_test_lf1 <- filter(G_test_long1, page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8"))
 
-t2 <- G_test_long %>%
-  filter(page %in% c("Matrix_1", "Matrix_2")) %>%
-  t.test(Completion_Time_s ~ p_rf_l2, data = .) %>%
-  tidy(.)
+t1a <- tidy(leveneTest(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
+t1b <- tidy(t.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
+t1c <- tidy(wilcox.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
+t1d <- by(G_test_lf1$Completion_Time_sc, G_test_lf1$p_rf_l2, median, na.rm = T)
 
-dat <- rbind(t1[, 2:5], t2[, 2:5])
+G_test_lf2 <- filter(G_test_long1, page %in% c("Matrix_1", "Matrix_2"))
+
+t2a <- tidy(leveneTest(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
+t2b <- tidy(t.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
+t2c <- tidy(wilcox.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
+t2d <- by(G_test_lf2$Completion_Time_sc, G_test_lf2$p_rf_l2, median, na.rm = T)
+
+dat <- rbind(t1b[, 2:5], t2b[, 2:5])
 dat <- add_column(dat, var = c("Single", "Grid"), .before = 1)
 colnames(dat) <- c("", "m(moving)", "m(not moving)", "statistic", "p.value")
 
 tab <- xtable(dat, digits = 3)
 print(tab, type = "latex", file = "t4_resp_times.tex")
 
-## 05: Compare groups (respondent level)
+# Completion Times - models
+
+m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = G_test_long1)
+m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + (1 | ID) + (1 | page), data = G_test_long1)
+m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + gender + age + german + (1 | ID) + (1 | page), data = G_test_long1)
+m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + gender + age + german + (1 | ID) + (1 | page), data = G_test_long1)
+m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + gender + age + german + (1 | ID) + (1 | page), data = G_test_long1)
+
+summary(m1)
+summary(m2)
+summary(m3)
+summary(m4)
+
+class(m1) <- "lmerMod"
+class(m2) <- "lmerMod"
+class(m3) <- "lmerMod"
+class(m4) <- "lmerMod"
+
+stargazer(m1, m2, m3, m4, keep=c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"),
+          add.lines = list(c("Demographic controls", "", "X", "X", "X")), title = "Mixed effects regressions", 
+          omit.stat = c("aic"), align = TRUE, no.space = TRUE, out.header = T, out = "t4_resp_times_m.tex")
+
+# Intra-individual response variability - tests
+
+G_test_long1$irv[G_test_long1$irv == 0 & G_test_long1$Answ_1 == 0] <- NA
+
+t1 <- tidy(leveneTest(irv ~ p_rf_l2, data = G_test_long1))
+t2 <- tidy(t.test(irv ~ p_rf_l2, data = G_test_long1))
+
+qs <- quantile(G_test_long1$irv, probs = c(0, 0.1, 0.2, 0.25, 0.5, 0.75, 1), na.rm = T)
+G_test_long1$irv_p20 <- ifelse(G_test_long1$irv <= qs[[3]], 1, 0)
+G_test_long1$irv_p10 <- ifelse(G_test_long1$irv <= qs[[2]], 1, 0)
+
+t3 <- tidy(chisq.test(G_test_long1$p_rf_l2, G_test_long1$irv_p20))
+t4 <- tidy(chisq.test(G_test_long1$p_rf_l2, G_test_long1$irv_p10))
+t5 <- by(G_test_long1$irv_p20, G_test_long1$p_rf_l2, table)
+t6 <- by(G_test_long1$irv_p10, G_test_long1$p_rf_l2, table)
+
+# Intra-individual response variability - models
+
+m0 <- glmer(irv_p20 ~ (1 | ID) + (1 | page), family = binomial, data = G_test_long1)
+m1 <- glmer(irv_p20 ~ p_rf_l2 + (1 | ID) + (1 | page), family = binomial, data = G_test_long1)
+m2 <- glmer(irv_p20 ~ p_rf_l2 + gender + age + german + (1 | ID) + (1 | page), family = binomial, data = G_test_long1)
+
+summary(m1)
+summary(m2)
+
+## 05: Compare groups (item level)
+
+# Primacy effects - tests
+
+t1 <- tidy(chisq.test(G_test_long2$p_rf_l2, G_test_long2$primacy))
+t2 <- by(G_test_long2$primacy, G_test_long2$p_rf_l2, table)
+
+# Primacy effects - models
+
+m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = G_test_long2)
+m1 <- glmer(primacy ~ p_rf_l2 + (1 | ID) + (1 | page), family = binomial, data = G_test_long2)
+m2 <- glmer(primacy ~ p_rf_l2 + gender + age + german + (1 | ID) + (1 | page), family = binomial, data = G_test_long2)
+m3 <- glmer(primacy ~ p_rf_l2 + pages + gender + age + german + (1 | ID) + (1 | page), family = binomial, data = G_test_long2)
+m4 <- glmer(primacy ~ p_rf_l2*pages + gender + age + german + (1 | ID) + (1 | page), family = binomial, data = G_test_long2)
+
+summary(m1)
+summary(m2)
+summary(m3)
+summary(m4)
+
+## 06: Compare groups (respondent level)
 # Attention check, Multitasking 1 + 2
 
 d <- G_test_wide %>%
@@ -173,6 +248,15 @@ colnames(dat) <- c("", "m(moving)", "m(not moving)", "statistic", "p.value")
 tab <- xtable(dat, digits = 3)
 print(tab, type = "latex", file = "t4_svy_eval.tex")
 
-# Item Nonresponse, Break-Off
+# Survey Focus, Item Nonresponse
 
-# Response styles
+G_test_wide %>%
+  drop_na(p_rf_l2m) %>%
+  group_by(p_rf_l2m) %>%
+  rename(p_rf = p_rf_l2m) %>%
+  summarise(E1_SF_OFF = mean(E1_SF_OFF), E2_SF_OFF = mean(E2_SF_OFF), 
+            E1_SF_OFF = mean(E3_SF_OFF), E4_SF_OFF = mean(E4_SF_OFF), 
+            E5_SF_OFF = mean(E5_SF_OFF), E6_SF_OFF = mean(E6_SF_OFF), 
+            E7_SF_OFF = mean(E7_SF_OFF), E8_SF_OFF = mean(E8_SF_OFF), 
+            M_1_SF_OFF = mean(M_1_SF_OFF), M_2_SF_OFF = mean(M_2_SF_OFF),
+            Missings = mean(E1_M2_Missing))

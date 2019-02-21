@@ -64,6 +64,11 @@ p_ctree_l2 <- predict(ctree_l2, newdata = G_test_SM)
 p_rf_l2 <- predict(rf_l2, newdata = G_test_SM)
 p_xgb_l2 <- predict(xgb_l2, newdata = G_test_SM)
 
+G_test_SM <- 
+  cbind(G_test_SM, 
+        p_glmnet_l1, p_ctree_l1, p_rf_l1, p_xgb_l1,
+        p_glmnet_l2, p_ctree_l2, p_rf_l2, p_xgb_l2)
+
 ## 03: Plot predicted propensities
 
 ggplot(pr_glmnet_l1) +
@@ -134,28 +139,12 @@ table(p_ctree_l2, p_rf_l2)
 table(p_ctree_l2, p_xgb_l2)
 table(p_rf_l2, p_xgb_l2)
 
-# 06: Join with full data (long)
+# 06: Join with full data (long_1: one row per page)
 
-G_test_SM <- 
-  cbind(G_test_SM, 
-        p_glmnet_l1, p_ctree_l1, p_rf_l1, p_xgb_l1,
-        p_glmnet_l2, p_ctree_l2, p_rf_l2, p_xgb_l2)
+# Completion time
 
-ML_sub <- ML %>% 
-  select(ID, Completed, Lurker, No_JavaScript, Mobile_Device, 
-                    E1_Answ_1, E1_Completion_Time, E1_SF_OFF,
-                    E2_Answ_1, E2_Completion_Time, E2_SF_OFF,
-                    E3_Answ_1, E3_Completion_Time, E3_SF_OFF,
-                    E4_Answ_1, E4_Completion_Time, E4_SF_OFF,
-                    E5_Answ_1, E5_Completion_Time, E5_SF_OFF,
-                    E6_Answ_1, E6_Completion_Time, E6_SF_OFF,
-                    E7_Answ_1, E7_Completion_Time, E7_SF_OFF,
-                    E8_Answ_1, E8_Completion_Time, E8_SF_OFF,
-                    M_1_Answ_1, M_1_Completion_Time, M_1_SF_OFF,
-                    M_2_Answ_1, M_2_Completion_Time, M_2_SF_OFF)
-
-ML_sub <-
-  ML_sub %>% # Completion time in seconds
+ML <-
+  ML %>% # Completion time in seconds
   mutate(E1_Completion_Time_s = E1_Completion_Time * 0.001,
          E2_Completion_Time_s = E2_Completion_Time * 0.001,
          E3_Completion_Time_s = E3_Completion_Time * 0.001,
@@ -167,7 +156,15 @@ ML_sub <-
          M_1_Completion_Time_s = M_1_Completion_Time * 0.001,
          M_2_Completion_Time_s = M_2_Completion_Time * 0.001)
 
-cln_outliers <- function(x){ # Completion time outliers to NA
+list_in <- c("E1_Completion_Time_s", "E2_Completion_Time_s", "E3_Completion_Time_s", "E4_Completion_Time_s",
+             "E5_Completion_Time_s", "E6_Completion_Time_s", "E7_Completion_Time_s", "E8_Completion_Time_s",
+             "M_1_Completion_Time_s", "M_2_Completion_Time_s")
+
+list_out <- c("E1_Completion_Time_sc", "E2_Completion_Time_sc", "E3_Completion_Time_sc", "E4_Completion_Time_sc",
+             "E5_Completion_Time_sc", "E6_Completion_Time_sc", "E7_Completion_Time_sc", "E8_Completion_Time_sc",
+             "M_1_Completion_Time_sc", "M_2_Completion_Time_sc")
+
+cln_outliers <- function(x){
   lower <- quantile(x, probs = 0.05, na.rm = T)
   upper <- quantile(x, probs = 0.95, na.rm = T)
   x[x < lower] <- NA
@@ -175,27 +172,65 @@ cln_outliers <- function(x){ # Completion time outliers to NA
   return(x)
 }
 
-ML_sub[, 36:45] <- lapply(ML_sub[, 36:45], cln_outliers)
+ML[, list_out] <- lapply(ML[, list_in], cln_outliers)
 
-ML_long <- reshape(ML_sub, direction = "long", 
-        varying = c("E1_Answ_1", "E1_Completion_Time", "E1_Completion_Time_s", "E1_SF_OFF",
-                  "E2_Answ_1", "E2_Completion_Time", "E2_Completion_Time_s", "E2_SF_OFF",
-                  "E3_Answ_1", "E3_Completion_Time", "E3_Completion_Time_s", "E3_SF_OFF",
-                  "E4_Answ_1", "E4_Completion_Time", "E4_Completion_Time_s", "E4_SF_OFF",
-                  "E5_Answ_1", "E5_Completion_Time", "E5_Completion_Time_s", "E5_SF_OFF",
-                  "E6_Answ_1", "E6_Completion_Time", "E6_Completion_Time_s", "E6_SF_OFF",
-                  "E7_Answ_1", "E7_Completion_Time", "E7_Completion_Time_s", "E7_SF_OFF",
-                  "E8_Answ_1", "E8_Completion_Time", "E8_Completion_Time_s", "E8_SF_OFF",
-                  "M_1_Answ_1", "M_1_Completion_Time", "M_1_Completion_Time_s", "M_1_SF_OFF",
-                  "M_2_Answ_1", "M_2_Completion_Time", "M_2_Completion_Time_s", "M_2_SF_OFF"), 
-        timevar = "page",
-        times = c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "M_1", "M_2"),
-        v.names = c("Answ_1", "Completion_Time", "Completion_Time_s", "SF_OFF"),
-        idvar = "ID")
+# IRV
 
-G_test_long <-
-  ML_long %>%
-  mutate(page = fct_recode(page, "Matrix_1" = "M_1", 
+ML$M_1_irv <- rowSds(as.matrix(ML[, 468:475]), na.rm = T) # Row SD for M_1
+ML$M_2_irv <- rowSds(as.matrix(ML[, 506:513]), na.rm = T) # Row SD for M_2
+
+ML$E1_irv <- NA
+ML$E2_irv <- NA
+ML$E3_irv <- NA
+ML$E4_irv <- NA
+ML$E5_irv <- NA
+ML$E6_irv <- NA
+ML$E7_irv <- NA
+ML$E8_irv <- NA
+
+# Join
+
+ML_sub <- ML %>% 
+  select(ID, Completed, Lurker, No_JavaScript, Mobile_Device, 
+         Demo_Answ_1, Demo_Answ_2, Demo_Answ_3, Demo_Answ_4, Demo_Answ_5,
+         E1_Answ_1, E1_Completion_Time_s, E1_Completion_Time_sc, E1_SF_OFF, E1_irv,
+         E2_Answ_1, E2_Completion_Time_s, E2_Completion_Time_sc, E2_SF_OFF, E2_irv,
+         E3_Answ_1, E3_Completion_Time_s, E3_Completion_Time_sc, E3_SF_OFF, E3_irv,
+         E4_Answ_1, E4_Completion_Time_s, E4_Completion_Time_sc, E4_SF_OFF, E4_irv,
+         E5_Answ_1, E5_Completion_Time_s, E5_Completion_Time_sc, E5_SF_OFF, E5_irv,
+         E6_Answ_1, E6_Completion_Time_s, E6_Completion_Time_sc, E6_SF_OFF, E6_irv,
+         E7_Answ_1, E7_Completion_Time_s, E7_Completion_Time_sc, E7_SF_OFF, E7_irv,
+         E8_Answ_1, E8_Completion_Time_s, E8_Completion_Time_sc, E8_SF_OFF, E8_irv,
+         M_1_Answ_1, M_1_Completion_Time_s, M_1_Completion_Time_sc, M_1_SF_OFF, M_1_irv,
+         M_2_Answ_1, M_2_Completion_Time_s, M_2_Completion_Time_sc, M_2_SF_OFF, M_2_irv)
+
+ML_long1 <- reshape(ML_sub, direction = "long", 
+                   varying = c("E1_Answ_1", "E1_Completion_Time_s", "E1_Completion_Time_sc", "E1_SF_OFF", "E1_irv",
+                               "E2_Answ_1", "E2_Completion_Time_s", "E2_Completion_Time_sc", "E2_SF_OFF", "E2_irv",
+                               "E3_Answ_1", "E3_Completion_Time_s", "E3_Completion_Time_sc", "E3_SF_OFF", "E3_irv",
+                               "E4_Answ_1", "E4_Completion_Time_s", "E4_Completion_Time_sc", "E4_SF_OFF", "E4_irv",
+                               "E5_Answ_1", "E5_Completion_Time_s", "E5_Completion_Time_sc", "E5_SF_OFF", "E5_irv",
+                               "E6_Answ_1", "E6_Completion_Time_s", "E6_Completion_Time_sc", "E6_SF_OFF", "E6_irv",
+                               "E7_Answ_1", "E7_Completion_Time_s", "E7_Completion_Time_sc", "E7_SF_OFF", "E7_irv",
+                               "E8_Answ_1", "E8_Completion_Time_s", "E8_Completion_Time_sc", "E8_SF_OFF", "E8_irv",
+                               "M_1_Answ_1", "M_1_Completion_Time_s", "M_1_Completion_Time_sc", "M_1_SF_OFF", "M_1_irv",
+                               "M_2_Answ_1", "M_2_Completion_Time_s", "M_2_Completion_Time_sc", "M_2_SF_OFF", "M_2_irv"), 
+                   timevar = "page",
+                   times = c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "M_1", "M_2"),
+                   v.names = c("Answ_1", "Completion_Time_s", "Completion_Time_sc", "SF_OFF", "irv"),
+                   idvar = "ID")
+
+names(ML_long1) <- c("ID", "Completed", "Lurker", "No_JavaScript", "Mobile_Device",
+                     "Demo_Answ_1", "Demo_Answ_2", "Demo_Answ_3", "Demo_Answ_4", "Demo_Answ_5",
+                     "page", "Answ_1", "Completion_Time_s", "Completion_Time_sc", "irv", "SF_OFF")
+
+G_test_long1 <-
+  ML_long1 %>%
+  mutate(pages = fct_collapse(page, 
+                              Matrix = c("M_1", "M_2"),
+                              Single = c("E1", "E2", "E3","E4","E5","E6","E7","E8"))) %>%
+  mutate(page = fct_recode(page, 
+                           "Matrix_1" = "M_1", 
                            "Matrix_2" = "M_2",
                            "Single_E1" = "E1",
                            "Single_E2" = "E2",
@@ -205,10 +240,78 @@ G_test_long <-
                            "Single_E6" = "E6",
                            "Single_E7" = "E7",
                            "Single_E8" = "E8")) %>%
+  mutate(gender = fct_recode(as.factor(Demo_Answ_1),
+                             "male" = "1",
+                             "female" = "2",
+                             NULL = "0")) %>%
+  mutate(age = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(german = fct_recode(as.factor(Demo_Answ_5),
+                             "german" = "1",
+                             "not_german" = "2",
+                             NULL = "0")) %>%
   left_join(G_test_SM, by = c("ID" = "ID", "page" = "page")) %>%
   arrange(ID, page)
 
-# 07: Join with full data (wide)
+# 07: Join with full data (long_2: one row per item)
+
+# Primacy
+
+list_in <- c("E1_Answ_1", "E2_Answ_1", "E3_Answ_1", "E4_Answ_1", "E5_Answ_1", "E6_Answ_1", "E7_Answ_1", "E8_Answ_1",
+             "M_1_Answ_1", "M_1_Answ_2", "M_1_Answ_3", "M_1_Answ_4", "M_1_Answ_5", "M_1_Answ_6", "M_1_Answ_7", "M_1_Answ_8",
+             "M_2_Answ_1", "M_2_Answ_2", "M_2_Answ_3", "M_2_Answ_4", "M_2_Answ_5", "M_2_Answ_6", "M_2_Answ_7", "M_2_Answ_8")
+  
+list_out <- c("E1_primacy", "E2_primacy", "E3_primacy", "E4_primacy", "E5_primacy", "E6_primacy", "E7_primacy", "E8_primacy",
+             "M_1_1_primacy", "M_1_2_primacy", "M_1_3_primacy", "M_1_4_primacy", "M_1_5_primacy", "M_1_6_primacy", "M_1_7_primacy", "M_1_8_primacy",
+             "M_2_1_primacy", "M_2_2_primacy", "M_2_3_primacy", "M_2_4_primacy", "M_2_5_primacy", "M_2_6_primacy", "M_2_7_primacy", "M_2_8_primacy")
+
+ML[,list_out] <- lapply(ML[,list_in], function(x) {ifelse(x == 1, 1, 0)})
+
+# Join
+
+ML_sub <- ML %>% 
+  select(ID, Completed, Lurker, No_JavaScript, Mobile_Device, 
+         Demo_Answ_1, Demo_Answ_2, Demo_Answ_3, Demo_Answ_4, Demo_Answ_5,
+         E1_primacy, E2_primacy, E3_primacy, E4_primacy, E5_primacy, E6_primacy, E7_primacy, E8_primacy,
+         M_1_1_primacy, M_1_2_primacy, M_1_3_primacy, M_1_4_primacy, M_1_5_primacy, M_1_6_primacy, M_1_7_primacy, M_1_8_primacy,
+         M_2_1_primacy, M_2_2_primacy, M_2_3_primacy, M_2_4_primacy, M_2_5_primacy, M_2_6_primacy, M_2_7_primacy, M_2_8_primacy)
+
+ML_long2 <- reshape(ML_sub, direction = "long", 
+                    varying = c("E1_primacy", "E2_primacy", "E3_primacy", "E4_primacy", "E5_primacy", "E6_primacy", "E7_primacy", "E8_primacy",
+                                "M_1_1_primacy", "M_1_2_primacy", "M_1_3_primacy", "M_1_4_primacy", "M_1_5_primacy", "M_1_6_primacy", "M_1_7_primacy", "M_1_8_primacy",
+                                "M_2_1_primacy", "M_2_2_primacy", "M_2_3_primacy", "M_2_4_primacy", "M_2_5_primacy", "M_2_6_primacy", "M_2_7_primacy", "M_2_8_primacy"), 
+                    timevar = "item",
+                    times = c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", 
+                              "M_1_1", "M_1_2", "M_1_3", "M_1_4", "M_1_5", "M_1_6", "M_1_7", "M_1_8",
+                              "M_2_1", "M_2_2", "M_2_3", "M_2_4", "M_2_5", "M_2_6", "M_2_7", "M_2_8"),
+                    v.names = c("primacy"),
+                    idvar = "ID")
+
+G_test_long2 <-
+  ML_long2 %>%
+  mutate(pages = fct_collapse(item, 
+                              Matrix = c("M_1_1", "M_1_2", "M_1_3", "M_1_4", "M_1_5", "M_1_6", "M_1_7", "M_1_8",
+                                         "M_2_1", "M_2_2", "M_2_3", "M_2_4", "M_2_5", "M_2_6", "M_2_7", "M_2_8"),
+                              Single = c("E1", "E2", "E3","E4","E5","E6","E7","E8"))) %>%
+  mutate(page = fct_recode(item, 
+                           "Matrix_1" = "M_1_1", "Matrix_1" = "M_1_2", "Matrix_1" = "M_1_3", "Matrix_1" = "M_1_4", 
+                           "Matrix_1" = "M_1_5", "Matrix_1" = "M_1_6", "Matrix_1" = "M_1_7", "Matrix_1" = "M_1_8",
+                           "Matrix_2" = "M_2_1", "Matrix_2" = "M_2_2", "Matrix_2" = "M_2_3", "Matrix_2" = "M_2_4",
+                           "Matrix_2" = "M_2_5", "Matrix_2" = "M_2_6", "Matrix_2" = "M_2_7", "Matrix_2" = "M_2_8",
+                           "Single_E1" = "E1", "Single_E2" = "E2", "Single_E3" = "E3", "Single_E4" = "E4",
+                           "Single_E5" = "E5", "Single_E6" = "E6", "Single_E7" = "E7", "Single_E8" = "E8")) %>%
+  mutate(gender = fct_recode(as.factor(Demo_Answ_1),
+                             "male" = "1",
+                             "female" = "2",
+                             NULL = "0")) %>%
+  mutate(age = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(german = fct_recode(as.factor(Demo_Answ_5),
+                             "german" = "1",
+                             "not_german" = "2",
+                             NULL = "0")) %>%
+  left_join(G_test_SM, by = c("ID" = "ID", "page" = "page")) %>%
+  arrange(ID, page, item)
+
+# 08: Join with full data (wide)
 
 G_test_a <- # Aggregate by mode of predicted classes over pages
   G_test_SM %>%
@@ -295,4 +398,4 @@ G_test_wide <-
   left_join(G_test_a, by = "ID") %>%
   left_join(G_test_s, by = "ID")
 
-save(G_test_long, G_test_wide, file = "./src/output3.Rdata")
+save(G_test_long1, G_test_long2, G_test_wide, file = "./src/output3.Rdata")
