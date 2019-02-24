@@ -94,7 +94,7 @@ p1 <- sm %>%
   #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
   ylim(0, 5) +
   labs(x = "Time", y = "TA", title = "Sitting") +
-  theme_light(base_size = 9) +
+  theme_light(base_size = 10) +
   theme(legend.position = "none")
 
 p2 <- sm %>%
@@ -110,7 +110,7 @@ p2 <- sm %>%
   #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
   ylim(0, 5) +
   labs(x = "Time", y = "TA", title = "Standing") +
-  theme_light(base_size = 9) +
+  theme_light(base_size = 10) +
   theme(legend.position = "none")
 
 p3 <- sm %>%
@@ -126,7 +126,7 @@ p3 <- sm %>%
   #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
   ylim(0, 15) +
   labs(x = "Time", y = "TA", title = "Walking") +
-  theme_light(base_size = 9) +
+  theme_light(base_size = 10) +
   theme(legend.position = "none")
 
 p4 <- sm %>%
@@ -142,7 +142,7 @@ p4 <- sm %>%
   #  geom_smooth(aes(x = var, y = value), se = FALSE, color = "red", size = 0.25) +
   ylim(0, 15) +
   labs(x = "Time", y = "TA", title = "Climbing") +
-  theme_light(base_size = 9) +
+  theme_light(base_size = 10) +
   theme(legend.position = "none")
 
 plots <- arrangeGrob(p1, p2, p3, p4, nrow = 2)
@@ -407,7 +407,7 @@ p1 <- ggplot(resamp_l1) +
   labs(x = "") +
   labs(y = "ROC-AUC") +
   coord_flip() + 
-  theme_light() +
+  theme_light(base_size = 17) +
   theme(legend.position = "none")
 
 p2 <- ggplot(resamp_l1) +
@@ -415,11 +415,11 @@ p2 <- ggplot(resamp_l1) +
   labs(x = "") +
   labs(y = "logLoss") +
   coord_flip() + 
-  theme_light() +
+  theme_light(base_size = 17) +
   theme(legend.position = "none")
 
 plots <- arrangeGrob(p1, p2, nrow = 1)
-ggsave("p1_CV_perf1.pdf", plots, width = 8, height = 6)
+ggsave("p1_CV_perf1.pdf", plots, width = 8.25, height = 6)
 
 # D_group
 
@@ -451,11 +451,11 @@ resamp_l2 <-
 
 p3 <- ggplot(resamp_l2) +
   geom_boxplot(aes(y = ROC, x = fct_rev(model), fill = model)) +
-  ylim(0.5, 1) +
+  ylim(0.9, 1) +
   labs(x = "") +
   labs(y = "ROC-AUC") +
   coord_flip() + 
-  theme_light() +
+  theme_light(base_size = 17) +
   theme(legend.position = "none")
 
 p4 <- ggplot(resamp_l2) +
@@ -463,11 +463,11 @@ p4 <- ggplot(resamp_l2) +
   labs(x = "") +
   labs(y = "logLoss") +
   coord_flip() + 
-  theme_light() +
+  theme_light(base_size = 17) +
   theme(legend.position = "none")
 
 plots <- arrangeGrob(p3, p4, nrow = 1)
-ggsave("p1_CV_perf2.pdf", plots, width = 8, height = 6)
+ggsave("p1_CV_perf2.pdf", plots, width = 8.25, height = 6)
 
 # D_group + raw motion
 
