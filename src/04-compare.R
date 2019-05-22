@@ -193,9 +193,10 @@ class(m2) <- "lmerMod"
 class(m3) <- "lmerMod"
 class(m4) <- "lmerMod"
 
-stargazer(m1, m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"),
+stargazer(m1, m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "", "X", "X", "X")), title = "Mixed effects regressions", 
-          omit.stat = c("ll", "aic"), align = TRUE, no.space = TRUE, out.header = T, out = "t4_resp_times_m.tex")
+          omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t4_resp_times_m.tex")
 
 # Intra-individual response variability - tests
 
@@ -233,9 +234,10 @@ summary(m2b)
 class(m2a) <- "lmerMod"
 class(m2b) <- "lmerMod"
 
-stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"),
+stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "X", "X")), title = "Generalized mixed effects regressions", 
-          omit.stat = c("ll", "aic"), align = TRUE, no.space = TRUE, out.header = T, out = "t4_irv_m.tex")
+          omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t4_irv_m.tex")
 
 ## 05: Compare groups (item level)
 
@@ -263,9 +265,10 @@ class(m2) <- "lmerMod"
 class(m3) <- "lmerMod"
 class(m4) <- "lmerMod"
 
-stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"),
+stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "X", "X", "X")), title = "Generalized mixed effects regressions", 
-          omit.stat = c("ll", "aic"), align = TRUE, no.space = TRUE, out.header = T, out = "t4_primacy_m.tex")
+          omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t4_primacy_m.tex")
 
 ## 06: Compare groups (respondent level)
 # Attention check, Multitasking 1 + 2
