@@ -22,7 +22,7 @@ library(gridExtra)
 library(xtable)
 
 setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
-load("./data/G_Train.RData")
+load("./data/Goe_Train.RData")
 
 # y
 

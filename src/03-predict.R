@@ -8,6 +8,7 @@
 ## 01: Setup
 
 library(tidyverse)
+library(data.table)
 library(matrixStats)
 library(party)
 library(partykit)
@@ -15,15 +16,40 @@ library(caret)
 
 setwd("/home/ckern/Uni/Forschung/Article/2019 - MASS")
 load("./src/output1.Rdata")
-load("./data/G_Test_SM.RData") # long format
-load("./data/G_Test_full.RData") # wide format
+Goe <- read.csv("./data/Goe_with_out_G.csv", sep = "|", header = T) # nur SM vars
+
+# Pre-processing
+
+Goe_long <- 
+  Goe %>% 
+  gather(key = "page", value = "SM", 8:38) %>%
+  arrange(lfdn, as.numeric(as.character(page)))
+
+Goe_long <- filter(Goe_long, SM != "")
+names <- paste0("SM_", 1:15000)
+
+datalist <- list()
+for (i in Goe$lfdn) {
+  datalist[[i]] <- separate(Goe_long[Goe_long$lfdn == i,], 
+                            col = SM, 
+                            sep = ",",
+                            into = names,
+                            fill = "right",
+                            convert = TRUE,
+                            remove = FALSE)
+  datalist[[i]] <- datalist[[i]][, colSums(is.na(datalist[[i]])) != nrow(datalist[[i]])]
+  print(i)
+}
+Goe_long <- rbindlist(datalist, fill = TRUE)
+
+saveRDS(Goe_long, file = "./data/Goe_Test.RDS")
 
 # X
 
-motionvars <- grep("SM_" , names(SM_Final), value = TRUE)
+motionvars <- grep("SM_" , names(Goe_long), value = TRUE)
 
-G_test_SM <-
-  SM_Final %>%
+Goe_SM <-
+  Goe_long %>%
   select(motionvars) %>%
   mutate(SM_mean = rowMeans2(as.matrix(.), na.rm = T)) %>%
   mutate(SM_med = rowMedians(as.matrix(.), na.rm = T)) %>%
@@ -40,34 +66,41 @@ G_test_SM <-
   mutate(SM_q9 = rowQuantiles(as.matrix(.), probs = 0.9, na.rm = T)) %>%
   mutate(SM_q95 = rowQuantiles(as.matrix(.), probs = 0.95, na.rm = T)) %>%
   select(SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95) %>%
-  bind_cols(SM_Final[, 1:2], .)
+  bind_cols(Goe_long[, 1:9], .)
+
+Goe_SM[which(Goe_SM$SM_max == 0), 10:23] <- NA
+Goe_SM_drop <- drop_na(Goe_SM, 10:23)
 
 ## 02: Predict
 
-pr_glmnet_l1 <- predict(glmnet_l1, newdata = G_test_SM, type = "prob")
-pr_ctree_l1 <- predict(ctree_l1, newdata = G_test_SM, type = "prob")
-pr_rf_l1 <- predict(rf_l1, newdata = G_test_SM, type = "prob")
-pr_xgb_l1 <- predict(xgb_l1, newdata = G_test_SM, type = "prob")
+pr_glmnet_l1 <- predict(glmnet_l1, newdata = Goe_SM_drop, type = "prob")
+pr_ctree_l1 <- predict(ctree_l1, newdata = Goe_SM_drop, type = "prob")
+pr_rf_l1 <- predict(rf_l1, newdata = Goe_SM_drop, type = "prob")
+pr_xgb_l1 <- predict(xgb_l1, newdata = Goe_SM_drop, type = "prob")
 
-p_glmnet_l1 <- predict(glmnet_l1, newdata = G_test_SM)
-p_ctree_l1 <- predict(ctree_l1, newdata = G_test_SM)
-p_rf_l1 <- predict(rf_l1, newdata = G_test_SM)
-p_xgb_l1 <- predict(xgb_l1, newdata = G_test_SM)
+p_glmnet_l1 <- predict(glmnet_l1, newdata = Goe_SM_drop)
+p_ctree_l1 <- predict(ctree_l1, newdata = Goe_SM_drop)
+p_rf_l1 <- predict(rf_l1, newdata = Goe_SM_drop)
+p_xgb_l1 <- predict(xgb_l1, newdata = Goe_SM_drop)
 
-pr_glmnet_l2 <- predict(glmnet_l2, newdata = G_test_SM, type = "prob")
-pr_ctree_l2 <- predict(ctree_l2, newdata = G_test_SM, type = "prob")
-pr_rf_l2 <- predict(rf_l2, newdata = G_test_SM, type = "prob")
-pr_xgb_l2 <- predict(xgb_l2, newdata = G_test_SM, type = "prob")
+pr_glmnet_l2 <- predict(glmnet_l2, newdata = Goe_SM_drop, type = "prob")
+pr_ctree_l2 <- predict(ctree_l2, newdata = Goe_SM_drop, type = "prob")
+pr_rf_l2 <- predict(rf_l2, newdata = Goe_SM_drop, type = "prob")
+pr_xgb_l2 <- predict(xgb_l2, newdata = Goe_SM_drop, type = "prob")
 
-p_glmnet_l2 <- predict(glmnet_l2, newdata = G_test_SM)
-p_ctree_l2 <- predict(ctree_l2, newdata = G_test_SM)
-p_rf_l2 <- predict(rf_l2, newdata = G_test_SM)
-p_xgb_l2 <- predict(xgb_l2, newdata = G_test_SM)
+p_glmnet_l2 <- predict(glmnet_l2, newdata = Goe_SM_drop)
+p_ctree_l2 <- predict(ctree_l2, newdata = Goe_SM_drop)
+p_rf_l2 <- predict(rf_l2, newdata = Goe_SM_drop)
+p_xgb_l2 <- predict(xgb_l2, newdata = Goe_SM_drop)
 
-G_test_SM <- 
-  cbind(G_test_SM, 
-        p_glmnet_l1, p_ctree_l1, p_rf_l1, p_xgb_l1,
-        p_glmnet_l2, p_ctree_l2, p_rf_l2, p_xgb_l2)
+Goe_SM_drop <- 
+  Goe_SM_drop %>%
+  add_column(., 
+             p_glmnet_l1, p_ctree_l1, p_rf_l1, p_xgb_l1,
+             p_glmnet_l2, p_ctree_l2, p_rf_l2, p_xgb_l2) %>%
+  select(lfdn, page, 24:31)
+
+Goe_SM <- left_join(Goe_SM, Goe_SM_drop, by = c("lfdn", "page"))
 
 ## 03: Plot predicted propensities
 
@@ -139,7 +172,23 @@ table(p_ctree_l2, p_rf_l2)
 table(p_ctree_l2, p_xgb_l2)
 table(p_rf_l2, p_xgb_l2)
 
+save(Goe_SM, file = "./src/output3.Rdata")
+
 # 06: Join with full data (long_1: one row per page)
+
+Goe_SM <- mutate(Goe_SM, page = fct_recode(page, 
+                                           "Matrix_1" = "v_579", 
+                                           "Matrix_2" = "v_609",
+                                           "Single_E1" = "v_399",
+                                           "Single_E2" = "v_429",
+                                           "Single_E3" = "v_459",
+                                           "Single_E4" = "v_489",
+                                           "Single_E5" = "v_519",
+                                           "Single_E6" = "v_309",
+                                           "Single_E7" = "v_339",
+                                           "Single_E8" = "v_369")) 
+
+load("./data/Goe_Test_full.RData") # inhaltliche vars
 
 # Completion time
 
@@ -224,7 +273,7 @@ names(ML_long1) <- c("ID", "Completed", "Lurker", "No_JavaScript", "Mobile_Devic
                      "Demo_Answ_1", "Demo_Answ_2", "Demo_Answ_3", "Demo_Answ_4", "Demo_Answ_5",
                      "page", "Answ_1", "Completion_Time_s", "Completion_Time_sc", "irv", "SF_OFF")
 
-G_test_long1 <-
+ML_long1 <-
   ML_long1 %>%
   mutate(pages = fct_collapse(page, 
                               Matrix = c("M_1", "M_2"),
@@ -248,8 +297,11 @@ G_test_long1 <-
   mutate(german = fct_recode(as.factor(Demo_Answ_5),
                              "german" = "1",
                              "not_german" = "2",
-                             NULL = "0")) %>%
-  left_join(G_test_SM, by = c("ID" = "ID", "page" = "page")) %>%
+                             NULL = "0"))
+  
+Goe_long1 <-
+  ML_long1 %>%
+  left_join(Goe_SM, by = c("ID" = "lfdn", "page" = "page")) %>%
   arrange(ID, page)
 
 # 07: Join with full data (long_2: one row per item)
@@ -286,7 +338,7 @@ ML_long2 <- reshape(ML_sub, direction = "long",
                     v.names = c("primacy"),
                     idvar = "ID")
 
-G_test_long2 <-
+ML_long2 <-
   ML_long2 %>%
   mutate(pages = fct_collapse(item, 
                               Matrix = c("M_1_1", "M_1_2", "M_1_3", "M_1_4", "M_1_5", "M_1_6", "M_1_7", "M_1_8",
@@ -307,95 +359,11 @@ G_test_long2 <-
   mutate(german = fct_recode(as.factor(Demo_Answ_5),
                              "german" = "1",
                              "not_german" = "2",
-                             NULL = "0")) %>%
-  left_join(G_test_SM, by = c("ID" = "ID", "page" = "page")) %>%
+                             NULL = "0")) 
+
+Goe_long2 <- 
+  ML_long2 %>%
+  left_join(Goe_SM, by = c("ID" = "lfdn", "page" = "page")) %>%
   arrange(ID, page, item)
 
-# 08: Join with full data (wide)
-
-G_test_a <- # Aggregate by mode of predicted classes over pages
-  G_test_SM %>%
-  arrange(ID) %>%
-  group_by(ID) %>%
-  summarise(p_rf_l1m = names(which.max(table(p_rf_l1))),
-            p_rf_l2m = names(which.max(table(p_rf_l2))),
-            p_xgb_l1m = names(which.max(table(p_xgb_l1))),
-            p_xgb_l2m = names(which.max(table(p_xgb_l2))))
-
-G_test_s <- # Aggregate by "ever moving" over pages
-  G_test_SM %>%
-  select(ID, page, p_rf_l2, p_xgb_l2) %>%
-  gather(variable, value, -(ID:page)) %>%
-  unite(temp, page, variable) %>%
-  spread(temp, value)  %>%
-  mutate(p_rf_l2e = ifelse(Matrix_1_p_rf_l2 == "Moving" | 
-                           Matrix_2_p_rf_l2 == "Moving" |
-                           Single_E1_p_rf_l2 == "Moving" |
-                           Single_E2_p_rf_l2 == "Moving" |
-                           Single_E3_p_rf_l2 == "Moving" |
-                           Single_E4_p_rf_l2 == "Moving" |
-                           Single_E5_p_rf_l2 == "Moving" |
-                           Single_E6_p_rf_l2 == "Moving" |
-                           Single_E7_p_rf_l2 == "Moving" |
-                           Single_E8_p_rf_l2 == "Moving", "Moving", "Not_Moving")) %>%
-  mutate(p_xgb_l2e = ifelse(Matrix_1_p_xgb_l2 == "Moving" | 
-                             Matrix_2_p_xgb_l2 == "Moving" |
-                             Single_E1_p_xgb_l2 == "Moving" |
-                             Single_E2_p_xgb_l2 == "Moving" |
-                             Single_E3_p_xgb_l2 == "Moving" |
-                             Single_E4_p_xgb_l2 == "Moving" |
-                             Single_E5_p_xgb_l2 == "Moving" |
-                             Single_E6_p_xgb_l2 == "Moving" |
-                             Single_E7_p_xgb_l2 == "Moving" |
-                             Single_E8_p_xgb_l2 == "Moving", "Moving", "Not_Moving")) %>%
-  select(ID, p_rf_l2e, p_xgb_l2e)
-
-ML_sub <-
-  ML %>%
-  select(ID, Completed, Lurker, No_JavaScript, Mobile_Device, 
-         E1_Answ_1, E1_Completion_Time, E1_SF_OFF,
-         E2_Answ_1, E2_Completion_Time, E2_SF_OFF,
-         E3_Answ_1, E3_Completion_Time, E3_SF_OFF,
-         E4_Answ_1, E4_Completion_Time, E4_SF_OFF,
-         E5_Answ_1, E5_Completion_Time, E5_SF_OFF,
-         E6_Answ_1, E6_Completion_Time, E6_SF_OFF,
-         E7_Answ_1, E7_Completion_Time, E7_SF_OFF,
-         E8_Answ_1, E8_Completion_Time, E8_SF_OFF,
-         M_1_Answ_1, M_1_Answ_2, M_1_Answ_3, M_1_Answ_4, M_1_Answ_5, M_1_Answ_6, M_1_Answ_7, M_1_Answ_8, 
-         M_1_Completion_Time, M_1_SF_OFF,
-         M_2_Answ_1, M_2_Answ_2, M_2_Answ_3, M_2_Answ_4, M_2_Answ_5, M_2_Answ_6, M_2_Answ_7, M_2_Answ_8,
-         M_2_Completion_Time, M_2_SF_OFF,
-         AC_Answ_1, AC_Answ_2, AC_Answ_3, AC_Answ_4, AC_Answ_5, AC_Answ_6, AC_Answ_7, AC_Answ_8,
-         AC_Answ_9, AC_Answ_10, AC_Answ_11, AC_Answ_12, AC_Answ_13, AC_Answ_14, AC_Answ_15,
-         AC_Completion_Time, AC_SF_OFF,
-         SemDiff_Answ_1, SemDiff_Answ_2, SemDiff_Answ_3, SemDiff_Answ_4, SemDiff_Answ_5,
-         SemDiff_Completion_Time, SemDiff_SF_OFF,
-         Motivation_Answ_1, Motivation_Completion_Time, Motivation_SF_OFF,
-         Particip_Answ_1, Particip_Completion_Time, Particip_SF_OFF,
-         Multitasking_1_Answ_1, Multitasking_1_Completion_Time, Multitasking_1_SF_OFF,
-         Multitasking_2_Answ_1, Multitasking_2_Answ_2, Multitasking_2_Answ_3, Multitasking_2_Answ_4, 
-         Multitasking_2_Answ_5, Multitasking_2_Answ_6, Multitasking_2_Answ_7, Multitasking_2_Answ_8,
-         Multitasking_2_Completion_Time, Multitasking_2_SF_OFF,
-         Demo_Answ_1, Demo_Answ_2, Demo_Answ_3, Demo_Answ_4, Demo_Answ_5,
-         Demo_Completion_Time, Demo_SF_OFF)
-
-ML_sub <-
-  ML_sub %>%
-  mutate_at(c("SemDiff_Answ_1", "SemDiff_Answ_2", "SemDiff_Answ_3", "SemDiff_Answ_4", "SemDiff_Answ_5",  # 0 to NA
-              "Motivation_Answ_1", "Particip_Answ_1", "Multitasking_1_Answ_1"), list(~na_if(., 0))) %>%
-  mutate_at(c("E1_SF_OFF", "E2_SF_OFF", "E3_SF_OFF", "E4_SF_OFF", "E5_SF_OFF", "E6_SF_OFF", "E7_SF_OFF", # NA to 0
-              "E8_SF_OFF", "M_1_SF_OFF", "M_2_SF_OFF"), list(~replace_na(., 0))) %>%
-  mutate(AC_Answ = ifelse(AC_Answ_10 == 1 & AC_Answ_15 == 1, 1, 0)) %>%          # Attention check correct
-  mutate(Multitasking_1_Answ = ifelse(Multitasking_1_Answ_1 == 1, 1, 0)) %>%     # Multitasking dummy
-  mutate(Multitasking_2_Answ = rowSums(ML_sub[, 83:88]))                         # Multitasking index
-  
-ML_sub$E1_M2_Missing <- apply(ML_sub[, c(6,9,12,15,18,21,24,27,30:37,40:47)], 1, # Missing index for E1 - M_2
-                              function(x) {sum(x == 0, na.rm = TRUE)})
-ML_sub$E1_M2_Missing[ML_sub$Completed == 22] <- NA
- 
-G_test_wide <-
-  ML_sub %>%
-  left_join(G_test_a, by = "ID") %>%
-  left_join(G_test_s, by = "ID")
-
-save(G_test_long1, G_test_long2, G_test_wide, file = "./src/output3.Rdata")
+save(Goe_SM, Goe_long1, Goe_long2, file = "./src/output3.Rdata")
