@@ -70,7 +70,7 @@ ggsave("p4_TA_distributions.pdf", plots, width = 8, height = 6)
 
 ## 03: Class prediction
 
-g1 <- ggplot(Goe_long1) +
+ggplot(Goe_long1) +
   geom_mosaic(aes(x = product(page), fill = p_rf_l1), na.rm = TRUE) +
   labs(y = "", x = "") +
   theme_light(base_size = 12)  +
@@ -81,7 +81,7 @@ g1 <- ggplot(Goe_long1) +
 
 ggsave("p4_class_preds1.pdf", width = 4, height = 5.5)
 
-g2 <- Goe_long1 %>%
+Goe_long1 %>%
   drop_na(p_rf_l1) %>%
   ggplot() + 
   geom_bar(aes(x = page, fill = p_rf_l1), position = "fill", alpha = 0.85)  +
@@ -95,9 +95,10 @@ g2 <- Goe_long1 %>%
 
 ggsave("p4_class_preds1_2.pdf", width = 5, height = 5.5)
 
-g3 <- ggplot(Goe_long1) +
+ggplot(Goe_long1) +
   geom_mosaic(aes(x = product(page), fill = p_rf_l2), na.rm = TRUE) +
   labs(y = "", x = "") +
+  scale_fill_manual(values = c("#00BFC4", "#F8766D")) +
   theme_light(base_size = 12)  +
   theme(legend.position = "none",
         axis.text.x = element_text(angle = 45,
@@ -106,11 +107,12 @@ g3 <- ggplot(Goe_long1) +
 
 ggsave("p4_class_preds2.pdf", width = 4, height = 5.5)
 
-g4 <- Goe_long1 %>%
+Goe_long1 %>%
   drop_na(p_rf_l2) %>%
   ggplot() + 
   geom_bar(aes(x = page, fill = p_rf_l2), position = "fill", alpha = 0.85)  +
   labs(y = "", x = "") +
+  scale_fill_manual(values = c("#00BFC4", "#F8766D")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
   theme_light(base_size = 12)  +
   theme(legend.title = element_blank(),
@@ -119,6 +121,68 @@ g4 <- Goe_long1 %>%
                                    vjust = 1))
 
 ggsave("p4_class_preds2_2.pdf", width = 5.1, height = 5.5)
+
+## 03b: Sequence plots
+
+fct_reorg <- function(fac, ...) {
+  fct_recode(fct_relevel(fac, ...), ...)
+}
+
+Goe_SM$page_o <- fct_reorg(Goe_SM$page,
+                            "E_Intro" = "v_279", "Single_E6" = "Single_E6",
+                            "Single_E7" = "Single_E7", "Single_E8" = "Single_E8",
+                            "Single_E1" = "Single_E1", "Single_E2" = "Single_E2",
+                            "Single_E3" = "Single_E3", "Single_E4" = "Single_E4",
+                            "Single_E5" = "Single_E5", "M_Intro" = "v_549",
+                            "Matrix_1" = "Matrix_1", "Matrix_2" = "Matrix_2",
+                            "AC" = "v_639", "Pers_Intro" = "v_669",
+                            "SemDiff" = "v_699", "Particip" = "v_759",
+                            "Multi_1" = "v_789", "Multi_2" = "v_819",
+                            "Demo" = "v_849", "Device" = "v_879",
+                            "Device_Tablet" = "v_909", "Device_iPad" = "v_939",
+                            "Device_Smart" = "v_1179", "Device_iPhone" = "v_1209",
+                            "Connection" = "v_969", "Con_Mobile" = "v_999",
+                            "Place" = "v_1029", "Big5_Intro" = "v_1059",
+                            "NfC" = "v_1089", "Big5" = "v_1119",
+                            "Final" = "v_1149")
+
+Goe_SM <-
+  Goe_SM %>%
+  group_by(lfdn) %>%
+  mutate(mover = ifelse(mean(as.numeric(p_rf_l2)) > 1, "mover", "non_mover")) %>%
+  mutate(sum_moves = sum(as.numeric(p_rf_l2[p_rf_l2 == "Moving"]))/2) %>%
+  ungroup
+
+Goe_SM$lfdn_o <- reorder(Goe_SM$lfdn, -Goe_SM$sum_moves)
+
+Goe_SM %>%
+  filter(mover == "mover") %>%
+  ggplot() +
+  geom_tile(aes(x = page_o, y = lfdn_o, fill = p_rf_l2)) +
+  labs(x = "Page", y = "ID") +
+  scale_fill_manual(values = c("#00BFC4", "#F8766D")) +
+  theme_light(base_size = 10) +
+  theme(legend.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1,
+                                   vjust = 1))
+
+ggsave("p4_sequences_1.pdf", width = 9, height = 6)
+
+Goe_SM %>%
+  filter(mover == "mover") %>%
+  ggplot() +
+  geom_tile(aes(x = page_o, y = lfdn_o, fill = p_rf_l1)) +
+  labs(x = "Page", y = "ID") +
+  theme_light(base_size = 10) +
+  theme(legend.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1,
+                                   vjust = 1))
+
+ggsave("p4_sequences_2.pdf", width = 9, height = 6)
 
 ## 04: Compare groups (page level)
 # Completion Times - plots
@@ -129,6 +193,7 @@ g3 <- Goe_long1 %>%
   ggplot() +
   geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "Completion Time", x = "") +
+  scale_color_manual(values = c("#00BFC4", "#F8766D")) +
   theme_light() +
   theme(legend.position = "none",
         axis.text.x = element_text(angle = 45,
@@ -141,6 +206,7 @@ g4 <- Goe_long1 %>%
   ggplot() +
   geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "", x = "") +
+  scale_color_manual(values = c("#00BFC4", "#F8766D")) +
   guides(color = guide_legend(title = "")) +
   theme_light() +
   theme(axis.text.x = element_text(angle = 45,
