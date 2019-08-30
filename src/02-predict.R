@@ -1,8 +1,8 @@
 ##################
 # Survey Motion
-# Part II: Apply Prediction Models on Test Set
+# Part IIa: Apply Prediction Models on Test Set (Goettingen data)
 # Christoph Kern
-# R 3.4.4
+# R 3.5.1
 ##################
 
 ## 01: Setup

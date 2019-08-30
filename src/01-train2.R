@@ -1,9 +1,8 @@
 ##################
 # Survey Motion
-# Part I: Build Prediction Models
-# Data: Field experiment
+# Part I: Build Prediction Models (Field experiment)
 # Christoph Kern
-# R 3.4.4
+# R 3.5.1
 ##################
 
 ## 01: Setup

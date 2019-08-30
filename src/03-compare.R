@@ -1,6 +1,6 @@
 ##################
 # Survey Motion
-# Part III: Compare Motion Groups in Test Set
+# Part IIIa: Compare Motion Groups in Test Set (Goettingen data)
 # Christoph Kern
 # R 3.5.1
 ##################
@@ -216,29 +216,6 @@ g4 <- Goe_long1 %>%
 plots <- arrangeGrob(g3, g4, nrow = 1)
 ggsave("p4_resp_times.pdf", plots, width = 7, height = 5.5)
 
-# Completion Times - tests
-
-G_test_lf1 <- filter(Goe_long1, page %in% c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"))
-
-t1a <- tidy(leveneTest(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
-t1b <- tidy(t.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
-t1c <- tidy(wilcox.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
-t1d <- by(G_test_lf1$Completion_Time_sc, G_test_lf1$p_rf_l2, median, na.rm = T)
-
-G_test_lf2 <- filter(Goe_long1, page %in% c("M_1", "M_2"))
-
-t2a <- tidy(leveneTest(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
-t2b <- tidy(t.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
-t2c <- tidy(wilcox.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
-t2d <- by(G_test_lf2$Completion_Time_sc, G_test_lf2$p_rf_l2, median, na.rm = T)
-
-dat <- rbind(t1b[, 2:5], t2b[, 2:5])
-dat <- add_column(dat, var = c("Single", "Grid"), .before = 1)
-colnames(dat) <- c("", "m(moving)", "m(not moving)", "statistic", "p.value")
-
-tab <- xtable(dat, digits = 3)
-print(tab, type = "latex", file = "t4_resp_times.tex")
-
 # Completion Times - models
 
 Goe_long1$age_s <- scale(2017 - Goe_long1$age)
@@ -264,24 +241,6 @@ stargazer(m1, m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Movin
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t4_resp_times_m.tex")
 
-# Intra-individual response variability - tests
-
-Goe_long1$irv[Goe_long1$irv == 0 & Goe_long1$Answ_1 == 0] <- NA
-
-t1 <- tidy(leveneTest(irv ~ p_rf_l2, data = Goe_long1))
-t2 <- tidy(t.test(irv ~ p_rf_l2, data = Goe_long1))
-
-qs <- quantile(Goe_long1$irv, probs = c(0, 0.1, 0.2, 0.5, 0.8, 0.9, 1), na.rm = T)
-Goe_long1$irv_p20 <- ifelse(Goe_long1$irv <= qs[[3]], 1, 0)
-Goe_long1$irv_p10 <- ifelse(Goe_long1$irv <= qs[[2]], 1, 0)
-Goe_long1$irv_p90 <- ifelse(Goe_long1$irv >= qs[[6]], 1, 0)
-Goe_long1$irv_p80 <- ifelse(Goe_long1$irv >= qs[[5]], 1, 0)
-
-t3 <- tidy(chisq.test(Goe_long1$p_rf_l2, Goe_long1$irv_p20))
-t4 <- tidy(chisq.test(Goe_long1$p_rf_l2, Goe_long1$irv_p80))
-t5 <- by(Goe_long1$irv_p20, Goe_long1$p_rf_l2, table)
-t6 <- by(Goe_long1$irv_p80, Goe_long1$p_rf_l2, table)
-
 # Intra-individual response variability - models
 
 m0a <- glmer(irv_p20 ~ (1 | ID), family = binomial, data = Goe_long1)
@@ -306,12 +265,6 @@ stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
           out = "t4_irv_m.tex")
 
 ## 05: Compare groups (item level)
-
-# Primacy effects - tests
-
-t1 <- tidy(chisq.test(Goe_long2$p_rf_l2, Goe_long2$primacy))
-t2 <- by(Goe_long2$primacy, Goe_long2$p_rf_l2, table)
-
 # Primacy effects - models
 
 Goe_long2$age_s <- scale(2017 - Goe_long2$age)
@@ -337,7 +290,6 @@ stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pa
           out = "t4_primacy_m.tex")
 
 ## 06: Compare groups (respondent level)
-
 # Attention check - models
 
 Goe_ac$age_s <- scale(2017 - Goe_ac$age)
@@ -352,5 +304,3 @@ stargazer(m1, m2, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "", "X")), title = "Logistic regressions", 
           omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t4_ac_m.tex")
-
-# add Multitasking, Motivation, Survey Evaluation, Survey Focus, Item Nonresponse
