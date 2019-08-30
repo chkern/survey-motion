@@ -177,16 +177,16 @@ save(Goe_SM, file = "./src/output3.Rdata")
 # 06: Join with full data (long_1: one row per page)
 
 Goe_SM <- mutate(Goe_SM, page = fct_recode(page, 
-                                           "Matrix_1" = "v_579", 
-                                           "Matrix_2" = "v_609",
-                                           "Single_E1" = "v_399",
-                                           "Single_E2" = "v_429",
-                                           "Single_E3" = "v_459",
-                                           "Single_E4" = "v_489",
-                                           "Single_E5" = "v_519",
-                                           "Single_E6" = "v_309",
-                                           "Single_E7" = "v_339",
-                                           "Single_E8" = "v_369")) 
+                                           "M_1" = "v_579", 
+                                           "M_2" = "v_609",
+                                           "E1" = "v_399",
+                                           "E2" = "v_429",
+                                           "E3" = "v_459",
+                                           "E4" = "v_489",
+                                           "E5" = "v_519",
+                                           "E6" = "v_309",
+                                           "E7" = "v_339",
+                                           "E8" = "v_369")) 
 
 load("./data/Goe_Test_full.RData") # inhaltliche vars
 
@@ -278,17 +278,6 @@ ML_long1 <-
   mutate(pages = fct_collapse(page, 
                               Matrix = c("M_1", "M_2"),
                               Single = c("E1", "E2", "E3","E4","E5","E6","E7","E8"))) %>%
-  mutate(page = fct_recode(page, 
-                           "Matrix_1" = "M_1", 
-                           "Matrix_2" = "M_2",
-                           "Single_E1" = "E1",
-                           "Single_E2" = "E2",
-                           "Single_E3" = "E3",
-                           "Single_E4" = "E4",
-                           "Single_E5" = "E5",
-                           "Single_E6" = "E6",
-                           "Single_E7" = "E7",
-                           "Single_E8" = "E8")) %>%
   mutate(gender = fct_recode(as.factor(Demo_Answ_1),
                              "male" = "1",
                              "female" = "2",
@@ -345,12 +334,12 @@ ML_long2 <-
                                          "M_2_1", "M_2_2", "M_2_3", "M_2_4", "M_2_5", "M_2_6", "M_2_7", "M_2_8"),
                               Single = c("E1", "E2", "E3","E4","E5","E6","E7","E8"))) %>%
   mutate(page = fct_recode(item, 
-                           "Matrix_1" = "M_1_1", "Matrix_1" = "M_1_2", "Matrix_1" = "M_1_3", "Matrix_1" = "M_1_4", 
-                           "Matrix_1" = "M_1_5", "Matrix_1" = "M_1_6", "Matrix_1" = "M_1_7", "Matrix_1" = "M_1_8",
-                           "Matrix_2" = "M_2_1", "Matrix_2" = "M_2_2", "Matrix_2" = "M_2_3", "Matrix_2" = "M_2_4",
-                           "Matrix_2" = "M_2_5", "Matrix_2" = "M_2_6", "Matrix_2" = "M_2_7", "Matrix_2" = "M_2_8",
-                           "Single_E1" = "E1", "Single_E2" = "E2", "Single_E3" = "E3", "Single_E4" = "E4",
-                           "Single_E5" = "E5", "Single_E6" = "E6", "Single_E7" = "E7", "Single_E8" = "E8")) %>%
+                           "M_1" = "M_1_1", "M_1" = "M_1_2", "M_1" = "M_1_3", "M_1" = "M_1_4", 
+                           "M_1" = "M_1_5", "M_1" = "M_1_6", "M_1" = "M_1_7", "M_1" = "M_1_8",
+                           "M_2" = "M_2_1", "M_2" = "M_2_2", "M_2" = "M_2_3", "M_2" = "M_2_4",
+                           "M_2" = "M_2_5", "M_2" = "M_2_6", "M_2" = "M_2_7", "M_2" = "M_2_8",
+                           "E1" = "E1", "E2" = "E2", "E3" = "E3", "E4" = "E4",
+                           "E5" = "E5", "E6" = "E6", "E7" = "E7", "E8" = "E8")) %>%
   mutate(gender = fct_recode(as.factor(Demo_Answ_1),
                              "male" = "1",
                              "female" = "2",
@@ -366,4 +355,37 @@ Goe_long2 <-
   left_join(Goe_SM, by = c("ID" = "lfdn", "page" = "page")) %>%
   arrange(ID, page, item)
 
-save(Goe_SM, Goe_long1, Goe_long2, file = "./src/output3.Rdata")
+# 08: Join with full data (ac: only attention check)
+
+# Attention check
+
+ML_sub <- ML %>%
+  mutate(AC_Answ = ifelse(AC_Answ_10 == 1 & AC_Answ_15 == 1, 1, 0)) %>%
+  select(ID, Completed, Lurker, No_JavaScript, Mobile_Device, 
+         Demo_Answ_1, Demo_Answ_2, Demo_Answ_3, Demo_Answ_4, Demo_Answ_5,
+         AC_Answ, AC_Completion_Time, AC_SF_OFF)
+
+ML_ac <-
+  ML_sub %>%
+  mutate(page = "AC") %>%
+  mutate(gender = fct_recode(as.factor(Demo_Answ_1),
+                             "male" = "1",
+                             "female" = "2",
+                             NULL = "0")) %>%
+  mutate(age = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(german = fct_recode(as.factor(Demo_Answ_5),
+                             "german" = "1",
+                             "not_german" = "2",
+                             NULL = "0"))
+
+Goe_SM <- mutate(Goe_SM, page = fct_recode(page, 
+                                           "AC" = "v_639"))
+
+# Join
+
+Goe_ac <- 
+  ML_ac %>%
+  left_join(Goe_SM, by = c("ID" = "lfdn", "page" = "page")) %>%
+  arrange(ID)
+
+save(Goe_SM, Goe_long1, Goe_long2, Goe_ac, file = "./src/output3.Rdata")

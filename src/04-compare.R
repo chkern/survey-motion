@@ -129,13 +129,13 @@ fct_reorg <- function(fac, ...) {
 }
 
 Goe_SM$page_o <- fct_reorg(Goe_SM$page,
-                            "E_Intro" = "v_279", "Single_E6" = "Single_E6",
-                            "Single_E7" = "Single_E7", "Single_E8" = "Single_E8",
-                            "Single_E1" = "Single_E1", "Single_E2" = "Single_E2",
-                            "Single_E3" = "Single_E3", "Single_E4" = "Single_E4",
-                            "Single_E5" = "Single_E5", "M_Intro" = "v_549",
-                            "Matrix_1" = "Matrix_1", "Matrix_2" = "Matrix_2",
-                            "AC" = "v_639", "Pers_Intro" = "v_669",
+                            "E_Intro" = "v_279", "Single_E6" = "E6",
+                            "Single_E7" = "E7", "Single_E8" = "E8",
+                            "Single_E1" = "E1", "Single_E2" = "E2",
+                            "Single_E3" = "E3", "Single_E4" = "E4",
+                            "Single_E5" = "E5", "M_Intro" = "v_549",
+                            "Matrix_1" = "M_1", "Matrix_2" = "M_2",
+                            "AC" = "AC", "Pers_Intro" = "v_669",
                             "SemDiff" = "v_699", "Particip" = "v_759",
                             "Multi_1" = "v_789", "Multi_2" = "v_819",
                             "Demo" = "v_849", "Device" = "v_879",
@@ -189,7 +189,7 @@ ggsave("p4_sequences_2.pdf", width = 9, height = 6)
 
 g3 <- Goe_long1 %>%
   drop_na(p_rf_l2) %>%
-  filter(page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8")) %>%
+  filter(page %in% c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8")) %>%
   ggplot() +
   geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "Completion Time", x = "") +
@@ -202,7 +202,7 @@ g3 <- Goe_long1 %>%
 
 g4 <- Goe_long1 %>%
   drop_na(p_rf_l2) %>%
-  filter(page %in% c("Matrix_1", "Matrix_2")) %>%
+  filter(page %in% c("M_1", "M_2")) %>%
   ggplot() +
   geom_boxplot(aes(y = Completion_Time_sc, x = page, color = p_rf_l2), outlier.size = 0.1) +
   labs(y = "", x = "") +
@@ -218,14 +218,14 @@ ggsave("p4_resp_times.pdf", plots, width = 7, height = 5.5)
 
 # Completion Times - tests
 
-G_test_lf1 <- filter(Goe_long1, page %in% c("Single_E1", "Single_E2", "Single_E3", "Single_E4", "Single_E5", "Single_E6", "Single_E7", "Single_E8"))
+G_test_lf1 <- filter(Goe_long1, page %in% c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"))
 
 t1a <- tidy(leveneTest(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
 t1b <- tidy(t.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
 t1c <- tidy(wilcox.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf1))
 t1d <- by(G_test_lf1$Completion_Time_sc, G_test_lf1$p_rf_l2, median, na.rm = T)
 
-G_test_lf2 <- filter(Goe_long1, page %in% c("Matrix_1", "Matrix_2"))
+G_test_lf2 <- filter(Goe_long1, page %in% c("M_1", "M_2"))
 
 t2a <- tidy(leveneTest(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
 t2b <- tidy(t.test(Completion_Time_sc ~ p_rf_l2, data = G_test_lf2))
@@ -241,7 +241,7 @@ print(tab, type = "latex", file = "t4_resp_times.tex")
 
 # Completion Times - models
 
-Goe_long1$age_s <- scale(Goe_long1$age)
+Goe_long1$age_s <- scale(2017 - Goe_long1$age)
 
 m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = Goe_long1)
 m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + (1 | ID) + (1 | page), data = Goe_long1)
@@ -314,7 +314,7 @@ t2 <- by(Goe_long2$primacy, Goe_long2$p_rf_l2, table)
 
 # Primacy effects - models
 
-Goe_long2$age_s <- scale(Goe_long2$age)
+Goe_long2$age_s <- scale(2017 - Goe_long2$age)
 
 m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
 m1 <- glmer(primacy ~ p_rf_l2 + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
@@ -337,8 +337,20 @@ stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pa
           out = "t4_primacy_m.tex")
 
 ## 06: Compare groups (respondent level)
-# Attention check, Multitasking 1 + 2
 
-# Motivation, Survey Evaluation
+# Attention check - models
 
-# Survey Focus, Item Nonresponse
+Goe_ac$age_s <- scale(2017 - Goe_ac$age)
+
+m1 <- glm(AC_Answ ~ p_rf_l2, family = binomial, data = Goe_ac)
+m2 <- glm(AC_Answ ~ p_rf_l2 + gender + age_s + german, family = binomial, data = Goe_ac)
+
+summary(m1)
+summary(m2)
+
+stargazer(m1, m2, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
+          add.lines = list(c("Demographic controls", "", "X")), title = "Logistic regressions", 
+          omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t4_ac_m.tex")
+
+# add Multitasking, Motivation, Survey Evaluation, Survey Focus, Item Nonresponse
