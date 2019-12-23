@@ -288,7 +288,9 @@ ML_long1 <-
                               Single = c("E1", "E2", "E3", "E4", "E5"))) %>%
   mutate(sex = fct_recode(as.factor(sex),
                              "male" = "1",
-                             "female" = "2"))
+                             "female" = "2")) %>%
+  mutate(age = 2019 - Birthyear) %>%
+  mutate(age_s = scale(age)[,1])
   
 resp_long1 <-
   ML_long1 %>%
@@ -342,7 +344,9 @@ ML_long2 <-
                            "E1" = "E1", "E2" = "E2", "E3" = "E3", "E4" = "E4", "E5" = "E5")) %>%
   mutate(sex = fct_recode(as.factor(sex),
                              "male" = "1",
-                             "female" = "2")) 
+                             "female" = "2"))  %>%
+  mutate(age = 2019 - Birthyear) %>%
+  mutate(age_s = scale(age)[,1])
 
 resp_long2 <- 
   ML_long2 %>%

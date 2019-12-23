@@ -172,7 +172,7 @@ table(p_ctree_l2, p_rf_l2)
 table(p_ctree_l2, p_xgb_l2)
 table(p_rf_l2, p_xgb_l2)
 
-save(Goe_SM, file = "./src/output3.Rdata")
+save(Goe_SM, file = "./src/output2.Rdata")
 
 # 06: Join with full data (long_1: one row per page)
 
@@ -283,12 +283,14 @@ ML_long1 <-
   ML_long1 %>%
   mutate(pages = fct_collapse(page, 
                               Matrix = c("M_1", "M_2"),
-                              Single = c("E1", "E2", "E3","E4","E5","E6","E7","E8"))) %>%
-  mutate(gender = fct_recode(as.factor(Demo_Answ_1),
+                              Single = c("E1","E2","E3","E4","E5","E6","E7","E8"))) %>%
+  mutate(sex = fct_recode(as.factor(Demo_Answ_1),
                              "male" = "1",
                              "female" = "2",
                              NULL = "0")) %>%
-  mutate(age = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(Birthyear = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(age = 2017 - Birthyear) %>%
+  mutate(age_s = scale(age)[,1]) %>%
   mutate(german = fct_recode(as.factor(Demo_Answ_5),
                              "german" = "1",
                              "not_german" = "2",
@@ -346,11 +348,13 @@ ML_long2 <-
                            "M_2" = "M_2_5", "M_2" = "M_2_6", "M_2" = "M_2_7", "M_2" = "M_2_8",
                            "E1" = "E1", "E2" = "E2", "E3" = "E3", "E4" = "E4",
                            "E5" = "E5", "E6" = "E6", "E7" = "E7", "E8" = "E8")) %>%
-  mutate(gender = fct_recode(as.factor(Demo_Answ_1),
+  mutate(sex = fct_recode(as.factor(Demo_Answ_1),
                              "male" = "1",
                              "female" = "2",
                              NULL = "0")) %>%
-  mutate(age = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(Birthyear = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(age = 2017 - Birthyear) %>%
+  mutate(age_s = scale(age)[,1]) %>%
   mutate(german = fct_recode(as.factor(Demo_Answ_5),
                              "german" = "1",
                              "not_german" = "2",
@@ -374,11 +378,13 @@ ML_sub <- ML %>%
 ML_ac <-
   ML_sub %>%
   mutate(page = "AC") %>%
-  mutate(gender = fct_recode(as.factor(Demo_Answ_1),
+  mutate(sex = fct_recode(as.factor(Demo_Answ_1),
                              "male" = "1",
                              "female" = "2",
                              NULL = "0")) %>%
-  mutate(age = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(Birthyear = ifelse(Demo_Answ_2 >= 1900, Demo_Answ_2, NA)) %>%
+  mutate(age = 2017 - Birthyear) %>%
+  mutate(age_s = scale(age)[,1]) %>%
   mutate(german = fct_recode(as.factor(Demo_Answ_5),
                              "german" = "1",
                              "not_german" = "2",
@@ -394,4 +400,4 @@ Goe_ac <-
   left_join(Goe_SM, by = c("ID" = "lfdn", "page" = "page")) %>%
   arrange(ID)
 
-save(Goe_SM, Goe_long1, Goe_long2, Goe_ac, file = "./src/output3.Rdata")
+save(Goe_SM, Goe_long1, Goe_long2, Goe_ac, file = "./src/output2.Rdata")

@@ -158,8 +158,6 @@ ggsave("p5_resp_times.pdf", plots, width = 7, height = 5.5)
 
 # Completion Times - models
 
-resp_long1$age_s <- scale(2019 - resp_long1$Birthyear)
-
 m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = resp_long1)
 m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + (1 | ID) + (1 | page), data = resp_long1)
 m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + (1 | ID) + (1 | page), data = resp_long1)
@@ -206,8 +204,6 @@ stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
 
 ## 05: Compare groups (item level)
 # Primacy effects - models
-
-resp_long2$age_s <- scale(2019 - resp_long2$Birthyear)
 
 m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = resp_long2)
 m1 <- glmer(primacy ~ p_rf_l2 + (1 | ID) + (1 | page), family = binomial, data = resp_long2)

@@ -20,7 +20,7 @@ library(stargazer)
 
 setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
 load("./src/output1.Rdata")
-load("./src/output3.Rdata")
+load("./src/output2.Rdata")
 
 ## 02: Data check
 
@@ -218,13 +218,11 @@ ggsave("p3_resp_times.pdf", plots, width = 7, height = 5.5)
 
 # Completion Times - models
 
-Goe_long1$age_s <- scale(2017 - Goe_long1$age)
-
 m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = Goe_long1)
 m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + (1 | ID) + (1 | page), data = Goe_long1)
-m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + gender + age_s + german + (1 | ID) + (1 | page), data = Goe_long1)
-m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + gender + age_s + german + (1 | ID) + (1 | page), data = Goe_long1)
-m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + gender + age_s + german + (1 | ID) + (1 | page), data = Goe_long1)
+m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + german + (1 | ID) + (1 | page), data = Goe_long1)
+m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + german + (1 | ID) + (1 | page), data = Goe_long1)
+m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + (1 | ID) + (1 | page), data = Goe_long1)
 
 summary(m1)
 summary(m2)
@@ -245,11 +243,11 @@ stargazer(m1, m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Movin
 
 m0a <- glmer(irv_p20 ~ (1 | ID), family = binomial, data = Goe_long1)
 m1a <- glmer(irv_p20 ~ p_rf_l2 + (1 | ID), family = binomial, data = Goe_long1)
-m2a <- glmer(irv_p20 ~ p_rf_l2 + gender + age_s + german + (1 | ID), family = binomial, data = Goe_long1)
+m2a <- glmer(irv_p20 ~ p_rf_l2 + sex + age_s + german + (1 | ID), family = binomial, data = Goe_long1)
 
 m0b <- glmer(irv_p80 ~ (1 | ID), family = binomial, data = Goe_long1)
 m1b <- glmer(irv_p80 ~ p_rf_l2 + (1 | ID), family = binomial, data = Goe_long1)
-m2b <- glmer(irv_p80 ~ p_rf_l2 + gender + age_s + german + (1 | ID), family = binomial, data = Goe_long1)
+m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + german + (1 | ID), family = binomial, data = Goe_long1)
 
 summary(m1a)
 summary(m2a)
@@ -267,13 +265,11 @@ stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
 ## 05: Compare groups (item level)
 # Primacy effects - models
 
-Goe_long2$age_s <- scale(2017 - Goe_long2$age)
-
 m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
 m1 <- glmer(primacy ~ p_rf_l2 + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
-m2 <- glmer(primacy ~ p_rf_l2 + gender + age_s + german + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
-m3 <- glmer(primacy ~ p_rf_l2 + pages + gender + age_s + german + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
-m4 <- glmer(primacy ~ p_rf_l2*pages + gender + age_s + german + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
+m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + german + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
+m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + german + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
+m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + (1 | ID) + (1 | page), family = binomial, data = Goe_long2)
 
 summary(m1)
 summary(m2)
@@ -292,10 +288,8 @@ stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pa
 ## 06: Compare groups (respondent level)
 # Attention check - models
 
-Goe_ac$age_s <- scale(2017 - Goe_ac$age)
-
 m1 <- glm(AC_Answ ~ p_rf_l2, family = binomial, data = Goe_ac)
-m2 <- glm(AC_Answ ~ p_rf_l2 + gender + age_s + german, family = binomial, data = Goe_ac)
+m2 <- glm(AC_Answ ~ p_rf_l2 + sex + age_s + german, family = binomial, data = Goe_ac)
 
 summary(m1)
 summary(m2)
