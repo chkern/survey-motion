@@ -74,7 +74,7 @@ resp_SM <-
   mutate(SM_q9 = rowQuantiles(as.matrix(.), probs = 0.9, na.rm = T)) %>%
   mutate(SM_q95 = rowQuantiles(as.matrix(.), probs = 0.95, na.rm = T)) %>%
   select(SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95) %>%
-  bind_cols(resp_long_long[, 1:3], .)
+  bind_cols(resp_long[, 1:3], .)
 
 resp_SM[which(resp_SM$SM_max == 0), 4:17] <- NA
 resp_SM_drop <- drop_na(resp_SM, 4:17)
@@ -180,6 +180,15 @@ table(p_ctree_l2, p_rf_l2)
 table(p_ctree_l2, p_xgb_l2)
 table(p_rf_l2, p_xgb_l2)
 
+resp_SM <- mutate(resp_SM, page = fct_recode(page, 
+                                           "E1" = "MA_1",
+                                           "E2" = "MA_2",
+                                           "E3" = "MA_3",
+                                           "E4" = "MA_4",
+                                           "E5" = "MA_5",
+                                           "M_1" = "MJ_1", 
+                                           "M_2" = "MJ_2")) 
+
 save(resp_SM, file = "./src/output4.Rdata")
 
 # 06: Join with full data (long_1: one row per page)
@@ -265,6 +274,12 @@ ML_long1 <- reshape(ML_sub, direction = "long",
                    times = c("E1", "E2", "E3", "E4", "E5", "M_1", "M_2"),
                    v.names = c("Answ_1", "Completion_Time_s", "Completion_Time_sc", "irv"),
                    idvar = "ID")
+
+qs <- quantile(ML_long1$irv, probs = c(0, 0.1, 0.2, 0.5, 0.8, 0.9, 1), na.rm = T)
+ML_long1$irv_p10 <- ifelse(ML_long1$irv <= qs[[2]], 1, 0)
+ML_long1$irv_p20 <- ifelse(ML_long1$irv <= qs[[3]], 1, 0)
+ML_long1$irv_p80 <- ifelse(ML_long1$irv >= qs[[5]], 1, 0)
+ML_long1$irv_p90 <- ifelse(ML_long1$irv >= qs[[6]], 1, 0)
 
 ML_long1 <-
   ML_long1 %>%

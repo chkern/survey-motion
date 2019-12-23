@@ -273,6 +273,12 @@ names(ML_long1) <- c("ID", "Completed", "Lurker", "No_JavaScript", "Mobile_Devic
                      "Demo_Answ_1", "Demo_Answ_2", "Demo_Answ_3", "Demo_Answ_4", "Demo_Answ_5",
                      "page", "Answ_1", "Completion_Time_s", "Completion_Time_sc", "irv", "SF_OFF")
 
+qs <- quantile(ML_long1$irv, probs = c(0, 0.1, 0.2, 0.5, 0.8, 0.9, 1), na.rm = T)
+ML_long1$irv_p10 <- ifelse(ML_long1$irv <= qs[[2]], 1, 0)
+ML_long1$irv_p20 <- ifelse(ML_long1$irv <= qs[[3]], 1, 0)
+ML_long1$irv_p80 <- ifelse(ML_long1$irv >= qs[[5]], 1, 0)
+ML_long1$irv_p90 <- ifelse(ML_long1$irv >= qs[[6]], 1, 0)
+
 ML_long1 <-
   ML_long1 %>%
   mutate(pages = fct_collapse(page, 
