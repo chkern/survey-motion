@@ -66,7 +66,7 @@ gt6 <- ggplot(resp_long1) +
   theme_light(base_size = 9)
 
 plots <- arrangeGrob(gt1, gt2, gt3, gt4, gt5, gt6, nrow = 2)
-ggsave("p5_TA_distributions.pdf", plots, width = 8, height = 6)
+ggsave("p5a_TA_distributions.pdf", plots, width = 8, height = 6)
 
 ## 03: Class prediction
 
@@ -79,7 +79,7 @@ ggplot(resp_long1) +
                                    hjust = 1,
                                    vjust = 1))
 
-ggsave("p5_class_preds1.pdf", width = 4, height = 5.5)
+ggsave("p5a_class_preds1.pdf", width = 4, height = 5.5)
 
 resp_long1 %>%
   drop_na(p_rf_l1) %>%
@@ -93,7 +93,7 @@ resp_long1 %>%
                                    hjust = 1,
                                    vjust = 1))
 
-ggsave("p5_class_preds1_2.pdf", width = 5, height = 5.5)
+ggsave("p5a_class_preds1_2.pdf", width = 5, height = 5.5)
 
 ggplot(resp_long1) +
   geom_mosaic(aes(x = product(page), fill = p_rf_l2), na.rm = TRUE) +
@@ -105,7 +105,7 @@ ggplot(resp_long1) +
                                    hjust = 1,
                                    vjust = 1))
 
-ggsave("p5_class_preds2.pdf", width = 4, height = 5.5)
+ggsave("p5a_class_preds2.pdf", width = 4, height = 5.5)
 
 resp_long1 %>%
   drop_na(p_rf_l2) %>%
@@ -120,7 +120,7 @@ resp_long1 %>%
                                    hjust = 1,
                                    vjust = 1))
 
-ggsave("p5_class_preds2_2.pdf", width = 5.1, height = 5.5)
+ggsave("p5a_class_preds2_2.pdf", width = 5.1, height = 5.5)
 
 ## 03b: Sequence plots
 
@@ -154,7 +154,7 @@ g4 <- resp_long1 %>%
                                    vjust = 1))
 
 plots <- arrangeGrob(g3, g4, nrow = 1)
-ggsave("p5_resp_times.pdf", plots, width = 7, height = 5.5)
+ggsave("p5a_resp_times.pdf", plots, width = 7, height = 5.5)
 
 # Completion Times - models
 
@@ -177,7 +177,7 @@ class(m4) <- "lmerMod"
 stargazer(m1, m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "", "X", "X", "X")), title = "Mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
-          out = "t5_resp_times_m.tex")
+          out = "t5a_resp_times_m.tex")
 
 # Intra-individual response variability - models
 
@@ -200,7 +200,7 @@ class(m2b) <- "lmerMod"
 stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "X", "X")), title = "Generalized mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
-          out = "t5_irv_m.tex")
+          out = "t5a_irv_m.tex")
 
 ## 05: Compare groups (item level)
 # Primacy effects - models
@@ -223,7 +223,7 @@ class(m4) <- "lmerMod"
 stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pagesMatrix"), report = ('vcsp'),
           add.lines = list(c("Demographic controls", "X", "X", "X")), title = "Generalized mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
-          out = "t5_primacy_m.tex")
+          out = "t5a_primacy_m.tex")
 
 ## 06: Compare groups (respondent level)
 # Attention check - models
