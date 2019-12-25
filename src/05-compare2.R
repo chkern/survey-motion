@@ -136,6 +136,28 @@ com_long1 %>%
 
 ggsave("p5b_class_preds2.pdf", width = 8, height = 6)
 
+p <- ggplot(com_long1) +
+  geom_mosaic(aes(x = product(p_rf_l2, page), fill=p_rf_l2), na.rm=TRUE) +
+  facet_grid(survey~.)
+
+sum <- com_long1 %>%
+  group_by(survey, page) %>%
+  summarise(sum = sum(!is.na(p_rf_l2))) %>%
+  slice(rep(1:n(), each = 2))
+
+temp <- ggplot_build(p)$data[[1]] %>% 
+  mutate(survey = ifelse(PANEL == 1, "Survey one", "Survey two")) %>%
+  add_column(sum$sum) %>%
+  mutate(prop = .wt/sum$sum) %>%
+  mutate(prop = sprintf("%0.2f", prop))
+
+p + geom_text(data = temp, aes(x = (xmin+xmax)/2, y = (ymin+ymax)/2, label= prop), size = 3) +
+  labs(y = "", x = "Page") +
+  theme(text = element_text(size = 10),
+        legend.position = "none")
+
+ggsave("p5b_class_preds2_2.pdf", width = 7, height = 6)
+
 ## 03b: Sequence plots
 
 ## 04: Compare groups (page level)
@@ -195,7 +217,7 @@ class(m4) <- "lmerMod"
 class(m5) <- "lmerMod"
 
 stargazer(m1, m2, m3, m4, m5, 
-          keep = c("Constant", "p_rf_l2", "pages", "survey"),
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 6, 2, 7),
           report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "X", "X")), title = "Mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_resp_times_m.html")
@@ -227,7 +249,7 @@ class(m2b) <- "lmerMod"
 class(m3b) <- "lmerMod"
 
 stargazer(m1a, m2a, m3a, m1b, m2b, m3b, 
-          keep = c("Constant", "p_rf_l2", "survey"), 
+          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 5),
           report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "", "X", "X")), title = "Generalized mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_irv_m.html")
@@ -255,7 +277,7 @@ class(m4) <- "lmerMod"
 class(m5) <- "lmerMod"
 
 stargazer(m1, m2, m3, m4, m5,
-          keep = c("Constant", "p_rf_l2", "pages", "survey"), 
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 6, 2, 7),
           report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "X", "X")), title = "Generalized mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_primacy_m.html")
