@@ -16,18 +16,32 @@ library(caret)
 
 setwd("/home/ckern/Uni/Forschung/Article/2019 - MASS")
 load("./src/output1.Rdata")
-load("./data/SD-KOR_Test.RData")
+load("./data/Respondi_Test.RData")
 
 # Pre-processing
 
+Dataset <- 
+  Dataset %>% rename(ID = lfdn)
+
 resp_p <- 
-  Dataset2 %>% select(ID, MA_1_SM_No_G, MA_2_SM_No_G, MA_3_SM_No_G, MA_4_SM_No_G, MA_5_SM_No_G, MJ_1_SM_No_G, MJ_2_SM_No_G)
+  Dataset %>% select(ID, contains("SM_No_G"))
 
 resp_long <- reshape(resp_p, direction = "long",
-                     varying = c("MA_1_SM_No_G","MA_2_SM_No_G", "MA_3_SM_No_G", "MA_4_SM_No_G", "MA_5_SM_No_G", 
-                                 "MJ_1_SM_No_G", "MJ_2_SM_No_G"),
+                     varying = c("MA_1a_SM_No_G", "MA_2a_SM_No_G", "MA_3a_SM_No_G", "MA_4a_SM_No_G", "MA_5a_SM_No_G",
+                                 "MJ_1a_SM_No_G", "MJ_2a_SM_No_G",
+                                 "MA_1b_SM_No_G", "MA_2b_SM_No_G", "MA_3b_SM_No_G", "MA_4b_SM_No_G", "MA_5b_SM_No_G",
+                                 "MJ_1b_SM_No_G", "MJ_2b_SM_No_G",
+                                 "MA_1_SM_No_G", "MA_2_SM_No_G", "MA_3_SM_No_G", "MA_4_SM_No_G", "MA_5_SM_No_G", 
+                                 "MJ_1_SM_No_G", "MJ_2_SM_No_G",
+                                 "Attention_Check_SM_No_G", "Mother_T_SM_No_G"),
                      timevar = "page",
-                     times = c("MA_1", "MA_2", "MA_3", "MA_4", "MA_5", "MJ_1", "MJ_2"),
+                     times = c("MA_1a", "MA_2a", "MA_3a", "MA_4a", "MA_5a",
+                               "MJ_1a", "MJ_2a",
+                               "MA_1b", "MA_2b", "MA_3b", "MA_4b", "MA_5b",
+                               "MJ_1b", "MJ_2b",
+                               "MA_1", "MA_2", "MA_3", "MA_4", "MA_5", 
+                               "MJ_1", "MJ_2",
+                               "AC", "MT"),
                      v.names = c("SM"),
                      idvar = "ID")
 
@@ -193,7 +207,7 @@ save(resp_SM, file = "./src/output4.Rdata")
 
 # 06: Join with full data (long_1: one row per page)
 
-ML <- Dataset2 %>%
+ML <- Dataset %>%
   rename("E1_Answ_1" = "MA_1_Answ_1",
          "E2_Answ_1" = "MA_2_Answ_1",
          "E3_Answ_1" = "MA_3_Answ_1",
@@ -238,8 +252,8 @@ ML[, list_out] <- lapply(ML[, list_in], cln_outliers)
 
 # IRV
 
-ML$M_1_irv <- rowSds(as.matrix(ML[, 36:43]), na.rm = T) # Row SD for M_1
-ML$M_2_irv <- rowSds(as.matrix(ML[, 49:56]), na.rm = T) # Row SD for M_2
+ML$M_1_irv <- rowSds(as.matrix(ML[, 166:173]), na.rm = T) # Row SD for M_1
+ML$M_2_irv <- rowSds(as.matrix(ML[, 179:186]), na.rm = T) # Row SD for M_2
 
 ML$E1_irv <- NA
 ML$E2_irv <- NA
@@ -253,7 +267,8 @@ ML$E8_irv <- NA
 # Join
 
 ML_sub <- ML %>%
-  select(ID, Birthyear, sex, PC_SD, datetime, 
+  select(ID, dispcode, mobile, datetime, 
+         sex, age, education, Mother_T_Answ_1,
          E1_Answ_1, E1_Completion_Time_s, E1_Completion_Time_sc, E1_irv,
          E2_Answ_1, E2_Completion_Time_s, E2_Completion_Time_sc, E2_irv,
          E3_Answ_1, E3_Completion_Time_s, E3_Completion_Time_sc, E3_irv,
@@ -289,8 +304,12 @@ ML_long1 <-
   mutate(sex = fct_recode(as.factor(sex),
                              "male" = "1",
                              "female" = "2")) %>%
-  mutate(age = 2019 - Birthyear) %>%
-  mutate(age_s = scale(age)[,1])
+  mutate(age = 2019 - age) %>%
+  mutate(age_s = scale(age)[,1]) %>%
+  mutate(german = fct_recode(as.factor(Mother_T_Answ_1),
+                             "german" = "1",
+                             "not_german" = "2",
+                             NULL = "0"))
   
 resp_long1 <-
   ML_long1 %>%
@@ -314,7 +333,8 @@ ML[,list_out] <- lapply(ML[,list_in], function(x) {ifelse(x == 1, 1, 0)})
 # Join
 
 ML_sub <- ML %>% 
-  select(ID, Birthyear, sex, PC_SD, datetime, 
+  select(ID, dispcode, mobile, datetime, 
+         sex, age, education, Mother_T_Answ_1, 
          E1_primacy, E2_primacy, E3_primacy, E4_primacy, E5_primacy,
          M_1_1_primacy, M_1_2_primacy, M_1_3_primacy, M_1_4_primacy, M_1_5_primacy, M_1_6_primacy, M_1_7_primacy, M_1_8_primacy,
          M_2_1_primacy, M_2_2_primacy, M_2_3_primacy, M_2_4_primacy, M_2_5_primacy, M_2_6_primacy, M_2_7_primacy, M_2_8_primacy)
@@ -345,8 +365,12 @@ ML_long2 <-
   mutate(sex = fct_recode(as.factor(sex),
                              "male" = "1",
                              "female" = "2"))  %>%
-  mutate(age = 2019 - Birthyear) %>%
-  mutate(age_s = scale(age)[,1])
+  mutate(age = 2019 - age) %>%
+  mutate(age_s = scale(age)[,1]) %>%
+  mutate(german = fct_recode(as.factor(Mother_T_Answ_1),
+                             "german" = "1",
+                             "not_german" = "2",
+                             NULL = "0"))
 
 resp_long2 <- 
   ML_long2 %>%
@@ -357,6 +381,32 @@ resp_long2 <-
 
 # Attention check
 
-# Save
+ML_sub <- ML %>%
+  mutate(AC_Answ = ifelse(Attention_Check_Answ_10 == 1 & Attention_Check_Answ_15 == 1, 1, 0)) %>%
+  select(ID, dispcode, mobile, datetime, 
+         sex, age, education, Mother_T_Answ_1,
+         AC_Answ)
 
-save(resp_SM, resp_long1, resp_long2, file = "./src/output4.Rdata")
+ML_ac <-
+  ML_sub %>%
+  mutate(page = "AC") %>%
+  mutate(sex = fct_recode(as.factor(sex),
+                          "male" = "1",
+                          "female" = "2"))  %>%
+  mutate(age = 2019 - age) %>%
+  mutate(age_s = scale(age)[,1]) %>%
+  mutate(german = fct_recode(as.factor(Mother_T_Answ_1),
+                             "german" = "1",
+                             "not_german" = "2",
+                             NULL = "0"))
+
+# Join
+
+resp_ac <- 
+  ML_ac %>%
+  left_join(resp_SM, by = c("ID", "page")) %>%
+  arrange(ID)
+
+## Save
+
+save(resp_SM, resp_long1, resp_long2, resp_ac, file = "./src/output4.Rdata")

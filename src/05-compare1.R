@@ -160,9 +160,9 @@ ggsave("p5a_resp_times.pdf", plots, width = 7, height = 5.5)
 
 m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = resp_long1)
 m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + (1 | ID) + (1 | page), data = resp_long1)
-m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + (1 | ID) + (1 | page), data = resp_long1)
-m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + (1 | ID) + (1 | page), data = resp_long1)
-m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + (1 | ID) + (1 | page), data = resp_long1)
+m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + german + (1 | ID) + (1 | page), data = resp_long1)
+m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + german + (1 | ID) + (1 | page), data = resp_long1)
+m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + (1 | ID) + (1 | page), data = resp_long1)
 
 summary(m1)
 summary(m2)
@@ -183,11 +183,11 @@ stargazer(m1, m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Movin
 
 m0a <- glmer(irv_p20 ~ (1 | ID), family = binomial, data = resp_long1)
 m1a <- glmer(irv_p20 ~ p_rf_l2 + (1 | ID), family = binomial, data = resp_long1)
-m2a <- glmer(irv_p20 ~ p_rf_l2 + sex + age_s + (1 | ID), family = binomial, data = resp_long1)
+m2a <- glmer(irv_p20 ~ p_rf_l2 + sex + age_s + german + (1 | ID), family = binomial, data = resp_long1)
 
 m0b <- glmer(irv_p80 ~ (1 | ID), family = binomial, data = resp_long1)
 m1b <- glmer(irv_p80 ~ p_rf_l2 + (1 | ID), family = binomial, data = resp_long1)
-m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + (1 | ID), family = binomial, data = resp_long1)
+m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + german + (1 | ID), family = binomial, data = resp_long1)
 
 summary(m1a)
 summary(m2a)
@@ -207,9 +207,9 @@ stargazer(m2a, m2b, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
 
 m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = resp_long2)
 m1 <- glmer(primacy ~ p_rf_l2 + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
-m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
-m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
-m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
+m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + german + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
+m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + german + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
+m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + (1 | ID) + (1 | page), family = binomial, data = resp_long2)
 
 summary(m1)
 summary(m2)
@@ -227,3 +227,14 @@ stargazer(m2, m3, m4, keep = c("Constant", "p_rf_l2", "pages", "p_rf_l2Moving:pa
 
 ## 06: Compare groups (respondent level)
 # Attention check - models
+
+m1 <- glm(AC_Answ ~ p_rf_l2, family = binomial, data = resp_ac)
+m2 <- glm(AC_Answ ~ p_rf_l2 + sex + age_s + german, family = binomial, data = resp_ac)
+
+summary(m1)
+summary(m2)
+
+stargazer(m1, m2, keep = c("Constant", "p_rf_l2"), report = ('vcsp'),
+          add.lines = list(c("Demographic controls", "", "X")), title = "Logistic regressions", 
+          omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t5a_ac_m.tex")

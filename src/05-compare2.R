@@ -27,11 +27,11 @@ load("./src/output4.Rdata")
 
 Goe_long1 <- Goe_long1 %>%
   filter(page %in% c("E1", "E2", "E3", "E4", "E5", "M_1", "M_2")) %>%
-  select(ID, page, pages, sex, Birthyear, age, age_s, datetime,
+  select(ID, page, pages, sex, age, age_s, german,
          Completion_Time_s, Completion_Time_sc, irv, irv_p10, irv_p20, irv_p80, irv_p90,
          SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
 
-resp_long1 <- select(resp_long1, ID, page, pages, sex, Birthyear, age, age_s, datetime,
+resp_long1 <- select(resp_long1, ID, page, pages, sex, age, age_s, german,
                     Completion_Time_s, Completion_Time_sc, irv, irv_p10, irv_p20, irv_p80, irv_p90,
                     SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
 
@@ -40,14 +40,23 @@ com_long1$age_s <- scale(com_long1$age)[,1] # Re-scale age
 
 Goe_long2 <- Goe_long2 %>%
   filter(page %in% c("E1", "E2", "E3", "E4", "E5", "M_1", "M_2")) %>%
-  select(ID, item, page, pages, sex, Birthyear, age, age_s, datetime,
+  select(ID, item, page, pages, sex, age, age_s, german,
          primacy, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
 
-resp_long2 <- select(resp_long2, ID, item, page, pages, sex, Birthyear, age, age_s, datetime,
+resp_long2 <- select(resp_long2, ID, item, page, pages, sex, age, age_s, german,
                      primacy, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
 
 com_long2 <- bind_rows("Survey one" = Goe_long2, "Survey two" = resp_long2, .id = "survey")
 com_long2$age_s <- scale(com_long2$age)[,1] # Re-scale age
+
+Goe_ac <- select(Goe_ac, ID, page, sex, age, age_s, german,
+                 AC_Answ, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
+
+resp_ac <- select(resp_ac, ID, page, sex, age, age_s, german,
+                  AC_Answ, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
+
+com_ac <- bind_rows("Survey one" = Goe_ac, "Survey two" = resp_ac, .id = "survey")
+com_ac$age_s <- scale(com_ac$age)[,1] # Re-scale age
 
 ## 02: Data check
 
@@ -158,8 +167,6 @@ p + geom_text(data = temp, aes(x = (xmin+xmax)/2, y = (ymin+ymax)/2, label= prop
 
 ggsave("p5b_class_preds2_2.pdf", width = 7, height = 6)
 
-## 03b: Sequence plots
-
 ## 04: Compare groups (page level)
 # Completion Times - plots
 
@@ -199,10 +206,10 @@ ggsave("p5b_resp_times.pdf", plots, width = 9, height = 6)
 
 m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = com_long1)
 m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + survey + (1 | ID) + (1 | page), data = com_long1)
-m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + survey + (1 | ID) + (1 | page), data = com_long1)
-m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + survey + (1 | ID) + (1 | page), data = com_long1)
-m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + survey + (1 | ID) + (1 | page), data = com_long1)
-m5 <- lmer(Completion_Time_sc ~ p_rf_l2*survey + pages + sex + age_s + (1 | ID) + (1 | page), data = com_long1)
+m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1)
+m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1)
+m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1)
+m5 <- lmer(Completion_Time_sc ~ p_rf_l2*survey + pages + sex + age_s + german + (1 | ID) + (1 | page), data = com_long1)
 
 summary(m1)
 summary(m2)
@@ -217,7 +224,7 @@ class(m4) <- "lmerMod"
 class(m5) <- "lmerMod"
 
 stargazer(m1, m2, m3, m4, m5, 
-          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 6, 2, 7),
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8),
           report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "X", "X")), title = "Mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_resp_times_m.html")
@@ -226,13 +233,13 @@ stargazer(m1, m2, m3, m4, m5,
 
 m0a <- glmer(irv_p20 ~ (1 | ID), family = binomial, data = com_long1)
 m1a <- glmer(irv_p20 ~ p_rf_l2 + survey + (1 | ID), family = binomial, data = com_long1)
-m2a <- glmer(irv_p20 ~ p_rf_l2 + sex + age_s + survey + (1 | ID), family = binomial, data = com_long1)
-m3a <- glmer(irv_p20 ~ p_rf_l2*survey + sex + age_s + (1 | ID), family = binomial, data = com_long1)
+m2a <- glmer(irv_p20 ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID), family = binomial, data = com_long1)
+m3a <- glmer(irv_p20 ~ p_rf_l2*survey + sex + age_s + german + (1 | ID), family = binomial, data = com_long1)
 
 m0b <- glmer(irv_p80 ~ (1 | ID), family = binomial, data = com_long1)
 m1b <- glmer(irv_p80 ~ p_rf_l2 + survey + (1 | ID), family = binomial, data = com_long1)
-m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + survey + (1 | ID), family = binomial, data = com_long1)
-m3b <- glmer(irv_p80 ~ p_rf_l2*survey + sex + age_s + (1 | ID), family = binomial, data = com_long1)
+m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID), family = binomial, data = com_long1)
+m3b <- glmer(irv_p80 ~ p_rf_l2*survey + sex + age_s + german + (1 | ID), family = binomial, data = com_long1)
 
 summary(m1a)
 summary(m2a)
@@ -249,7 +256,7 @@ class(m2b) <- "lmerMod"
 class(m3b) <- "lmerMod"
 
 stargazer(m1a, m2a, m3a, m1b, m2b, m3b, 
-          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 5),
+          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 6),
           report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "", "X", "X")), title = "Generalized mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_irv_m.html")
@@ -259,10 +266,10 @@ stargazer(m1a, m2a, m3a, m1b, m2b, m3b,
 
 m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = com_long2)
 m1 <- glmer(primacy ~ p_rf_l2 + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m5 <- glmer(primacy ~ p_rf_l2*survey + sex + age_s + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2)
+m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
+m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
+m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
+m5 <- glmer(primacy ~ p_rf_l2*survey + sex + age_s + german + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2)
 
 summary(m1)
 summary(m2)
@@ -277,10 +284,26 @@ class(m4) <- "lmerMod"
 class(m5) <- "lmerMod"
 
 stargazer(m1, m2, m3, m4, m5,
-          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 6, 2, 7),
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8),
           report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "X", "X")), title = "Generalized mixed effects regressions", 
           omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_primacy_m.html")
 
 ## 06: Compare groups (respondent level)
 # Attention check - models
+
+m0 <- glm(AC_Answ ~ p_rf_l2, family = binomial, data = com_ac)
+m1 <- glm(AC_Answ ~ p_rf_l2 + survey, family = binomial, data = com_ac)
+m2 <- glm(AC_Answ ~ p_rf_l2 + survey + sex + age_s + german, family = binomial, data = com_ac)
+m3 <- glm(AC_Answ ~ p_rf_l2*survey + sex + age_s + german, family = binomial, data = com_ac)
+
+summary(m0)
+summary(m1)
+summary(m2)
+summary(m3)
+
+stargazer(m1, m2, m3, 
+          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 6),
+          add.lines = list(c("Demographic controls", "", "X", "X")), title = "Logistic regressions", 
+          omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t5b_ac_m.html")
