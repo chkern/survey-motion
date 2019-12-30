@@ -204,12 +204,18 @@ ggsave("p5b_resp_times.pdf", plots, width = 9, height = 6)
 
 # Completion Times - models
 
-m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = com_long1)
-m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + survey + (1 | ID) + (1 | page), data = com_long1)
-m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1)
-m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1)
-m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1)
-m5 <- lmer(Completion_Time_sc ~ p_rf_l2*survey + pages + sex + age_s + german + (1 | ID) + (1 | page), data = com_long1)
+m0 <- lmer(Completion_Time_sc ~ (1 | ID) + (1 | page), data = com_long1, 
+           control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m1 <- lmer(Completion_Time_sc ~ p_rf_l2 + survey + (1 | ID) + (1 | page), data = com_long1,
+           control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m2 <- lmer(Completion_Time_sc ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1,
+           control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m3 <- lmer(Completion_Time_sc ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1,
+           control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), data = com_long1,
+           control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m5 <- lmer(Completion_Time_sc ~ p_rf_l2*survey + pages + sex + age_s + german + (1 | ID) + (1 | page), data = com_long1,
+           control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 
 summary(m1)
 summary(m2)
@@ -264,12 +270,18 @@ stargazer(m1a, m2a, m3a, m1b, m2b, m3b,
 ## 05: Compare groups (item level)
 # Primacy effects - models
 
-m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m1 <- glmer(primacy ~ p_rf_l2 + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2)
-m5 <- glmer(primacy ~ p_rf_l2*survey + sex + age_s + german + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2)
+m0 <- glmer(primacy ~ (1 | ID) + (1 | page), family = binomial, data = com_long2, 
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m1 <- glmer(primacy ~ p_rf_l2 + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m2 <- glmer(primacy ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m3 <- glmer(primacy ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m5 <- glmer(primacy ~ p_rf_l2*survey + sex + age_s + german + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 
 summary(m1)
 summary(m2)
