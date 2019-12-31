@@ -92,10 +92,33 @@ stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = A
 stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, age = age, sex = sex, german = german, .id = "var") %>%
   filter(survey == "Survey two") %>% select(-survey) %>% mutate(m = round(m, 3))
 
-stargazer(stats_s1, summary = FALSE, out = "t5b_stats_s1.html")
-stargazer(stats_s2, summary = FALSE, out = "t5b_stats_s2.html")
+stargazer(stats_s1, summary = FALSE, out = "t5b_stats_1.html")
+stargazer(stats_s2, summary = FALSE, out = "t5b_stats_2.html")
 
 ## 02b: Data check - Survey Motion
+
+sm_stats1 <- sm %>% filter(D_group == "Moving") %>% select(SM_mean:SM_q95) %>%
+  summarise_all(list(~mean(.), ~min(.), ~max(.), ~n())) %>% mutate_all(~round(., 3))
+sm_stats1 <- as.data.frame(matrix(sm_stats1, ncol = 4)) 
+
+sm_stats2 <- sm %>% filter(D_group == "Not_Moving") %>% select(SM_mean:SM_q95) %>%
+  summarise_all(list(~mean(.), ~min(.), ~max(.), ~n())) %>% mutate_all(~round(., 3))
+sm_stats2 <- as.data.frame(matrix(sm_stats2, ncol = 4))
+
+Goe_stats <- Goe_SM %>% select(SM_mean:SM_q95) %>% mutate_if(is.numeric, list(~na_if(., Inf))) %>%
+  summarise_all(list(~mean(., na.rm = T), ~min(., na.rm = T), ~max(., na.rm = T), ~n())) %>% mutate_all(~round(., 3))
+Goe_stats <- as.data.frame(matrix(Goe_stats, ncol = 4))
+
+resp_stats <- resp_SM %>% select(SM_mean:SM_q95) %>% mutate_if(is.numeric, list(~na_if(., Inf))) %>%
+  summarise_all(list(~mean(., na.rm = T), ~min(., na.rm = T), ~max(., na.rm = T), ~n())) %>% mutate_all(~round(., 3))
+resp_stats <- as.data.frame(matrix(resp_stats, ncol = 4))
+
+stargazer(sm_stats1, summary = FALSE, out = "t5b_SM_stats_1.html")
+stargazer(sm_stats2, summary = FALSE, out = "t5b_SM_stats_2.html")
+stargazer(Goe_stats, summary = FALSE, out = "t5b_SM_stats_3.html")
+stargazer(resp_stats, summary = FALSE, out = "t5b_SM_stats_4.html")
+
+# Density plots
 
 gt1 <- ggplot(sm) +
   geom_density(aes(x = SM_mean, color = D_group)) +
@@ -148,6 +171,8 @@ gt6 <- ggplot(com_long1) +
 
 plots <- arrangeGrob(gt1, gt2, gt3, gt4, gt5, gt6, nrow = 2)
 ggsave("p5b_TA_distributions.pdf", plots, width = 9, height = 6)
+
+# Violin plots
 
 gv1 <- ggplot(sm, aes(y = SM_mean, x = D_group, fill = D_group)) +
   geom_violin() +
