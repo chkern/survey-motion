@@ -58,7 +58,44 @@ resp_ac <- select(resp_ac, ID, page, sex, age, age_s, german,
 com_ac <- bind_rows("Survey one" = Goe_ac, "Survey two" = resp_ac, .id = "survey")
 com_ac$age_s <- scale(com_ac$age)[,1] # Re-scale age
 
-## 02: Data check
+## 02a: Data check - Descriptive Statistics
+
+CT <- com_long1 %>% group_by(survey) %>%
+  summarise(m = mean(Completion_Time_sc, na.rm = T), min = min(Completion_Time_sc, na.rm = T), max = max(Completion_Time_sc, na.rm = T), non_na = sum(!is.na(Completion_Time_sc)), n())
+
+irv20 <- com_long1 %>% filter(pages == "Matrix") %>% group_by(survey) %>%
+  summarise(m = mean(irv_p20, na.rm = T), min = min(irv_p20, na.rm = T), max = max(irv_p20, na.rm = T), non_na = sum(!is.na(irv_p20)), n())
+
+irv80 <- com_long1 %>% filter(pages == "Matrix") %>% group_by(survey) %>%
+  summarise(m = mean(irv_p80, na.rm = T), min = min(irv_p80, na.rm = T), max = max(irv_p80, na.rm = T), non_na = sum(!is.na(irv_p80)), n())
+
+prim <- com_long2 %>% group_by(survey) %>%
+  summarise(m = mean(primacy, na.rm = T), min = min(primacy, na.rm = T), max = max(primacy, na.rm = T), non_na = sum(!is.na(primacy)), n())
+
+AC <- com_ac %>% group_by(survey) %>%
+  summarise(m = mean(AC_Answ, na.rm = T), min = min(AC_Answ, na.rm = T), max = max(AC_Answ, na.rm = T), non_na = sum(!is.na(AC_Answ)), n())
+
+move <- com_long1 %>% to_dummy(p_rf_l2) %>% bind_cols(com_long1) %>% group_by(survey) %>%
+  summarise(m = mean(p_rf_l2_2, na.rm = T), min = min(p_rf_l2_2, na.rm = T), max = max(p_rf_l2_2, na.rm = T), non_na = sum(!is.na(p_rf_l2_2)), n())
+
+age <- com_ac %>% group_by(survey) %>%
+  summarise(m = mean(age, na.rm = T), min = min(age, na.rm = T), max = max(age, na.rm = T), non_na = sum(!is.na(age)), n())
+
+sex <- com_ac %>% to_dummy(sex) %>% bind_cols(com_ac) %>% group_by(survey) %>%
+  summarise(m = mean(sex_1, na.rm = T), min = min(sex_1, na.rm = T), max = max(sex_1, na.rm = T), non_na = sum(!is.na(sex_1)), n())
+
+german <- com_ac %>% to_dummy(german) %>% bind_cols(com_ac) %>% group_by(survey) %>%
+  summarise(m = mean(german_1, na.rm = T), min = min(german_1, na.rm = T), max = max(german_1, na.rm = T), non_na = sum(!is.na(german_1)), n())
+
+stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, age = age, sex = sex, german = german, .id = "var") %>% 
+  filter(survey == "Survey one") %>% select(-survey) %>% mutate(m = round(m, 3))
+stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, age = age, sex = sex, german = german, .id = "var") %>%
+  filter(survey == "Survey two") %>% select(-survey) %>% mutate(m = round(m, 3))
+
+stargazer(stats_s1, summary = FALSE, out = "t5b_stats_s1.html")
+stargazer(stats_s2, summary = FALSE, out = "t5b_stats_s2.html")
+
+## 02b: Data check - Survey Motion
 
 gt1 <- ggplot(sm) +
   geom_density(aes(x = SM_mean, color = D_group)) +
@@ -111,6 +148,57 @@ gt6 <- ggplot(com_long1) +
 
 plots <- arrangeGrob(gt1, gt2, gt3, gt4, gt5, gt6, nrow = 2)
 ggsave("p5b_TA_distributions.pdf", plots, width = 9, height = 6)
+
+gv1 <- ggplot(sm, aes(y = SM_mean, x = D_group, fill = D_group)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5, outlier.alpha = 0.1, outlier.size = 1) +
+  labs(title = "Training data", x = "") +
+  theme(legend.position = "none",
+        text = element_text(size = 10))
+
+gv2 <- ggplot(sm, aes(y = SM_var, x = D_group, fill = D_group)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5, outlier.alpha = 0.1, outlier.size = 1) +
+  labs(title = "", x = "") +
+  theme(legend.position = "none",
+        text = element_text(size = 10))
+
+gv3 <- ggplot(sm, aes(y = SM_max, x = D_group, fill = D_group)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5, outlier.alpha = 0.1, outlier.size = 1) +
+  labs(title = "", x = "") +
+  theme(legend.position = "none",
+        text = element_text(size = 10))
+
+gv4 <- ggplot(com_long1, aes(y = SM_mean, x = survey, fill = survey)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5, outlier.alpha = 0.1, outlier.size = 0.5) +
+  coord_cartesian(ylim = c(0, 4)) +
+  labs(title = "Survey data", x = "") +
+  scale_fill_brewer(palette = "Dark2") +
+  theme(legend.position = "none",
+        text = element_text(size = 10))
+
+gv5 <- ggplot(com_long1, aes(y = SM_var, x = survey, fill = survey)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5, outlier.alpha = 0.1, outlier.size = 0.5) +
+  coord_cartesian(ylim = c(0, 3.65)) +
+  labs(title = "", x = "") +
+  scale_fill_brewer(palette = "Dark2") +
+  theme(legend.position = "none",
+        text = element_text(size = 10))
+
+gv6 <- ggplot(com_long1, aes(y = SM_max, x = survey, fill = survey)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5, outlier.alpha = 0.1, outlier.size = 0.5) +
+  coord_cartesian(ylim = c(0, 18.5)) +
+  labs(title = "", x = "") +
+  scale_fill_brewer(palette = "Dark2") +
+  theme(legend.position = "none",
+        text = element_text(size = 10))
+
+plots <- arrangeGrob(gv1, gv2, gv3, gv4, gv5, gv6, nrow = 2)
+ggsave("p5b_TA_distributions_2.pdf", plots, width = 9, height = 6)
 
 ## 03: Class prediction
 
