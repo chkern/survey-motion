@@ -19,6 +19,7 @@ library(ranger)
 library(xgboost)
 library(gridExtra)
 library(xtable)
+library(stargazer)
 
 setwd("E:\\Uni\\Forschung\\Article\\2019 - MASS")
 load("./data/Goe_Train.RData")
@@ -428,8 +429,16 @@ resamps_l2 <- resamples(list(GLMnet = glmnet_l2,
                              XGBoost = xgb_l2))
 
 resamps_l2
-summary(resamps_l2)
 bwplot(resamps_l2)
+
+sum <- summary(resamps_l2)
+sum_acc <- round(sum$statistics$Accuracy, 3)
+sum_ll <- round(sum$statistics$logLoss, 3)
+sum_roc <- round(sum$statistics$ROC, 3)
+
+stargazer(sum_acc, summary = FALSE, out = "t1_perf_1.html")
+stargazer(sum_ll, summary = FALSE, out = "t1_perf_2.html")
+stargazer(sum_roc, summary = FALSE, out = "t1_perf_3.html")
 
 resamp_l2 <- 
   reshape(resamps_l2$values,

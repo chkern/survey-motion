@@ -428,7 +428,7 @@ summary(m2)
 summary(m3)
 
 stargazer(m1, m2, m3, 
-          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 6),
-          add.lines = list(c("Demographic controls", "", "X", "X")), title = "Logistic regressions", 
+          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 3),
+          report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X")), title = "Logistic regressions", 
           omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_ac_m.html")
