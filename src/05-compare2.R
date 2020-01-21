@@ -13,6 +13,7 @@ library(caret)
 library(gridExtra)
 library(ggmosaic)
 library(car)
+library(DescTools)
 library(lme4)
 library(lmerTest)
 library(xtable)
@@ -330,22 +331,18 @@ m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + survey + 
 m5 <- lmer(Completion_Time_sc ~ p_rf_l2*survey + pages + sex + age_s + german + (1 | ID) + (1 | page), data = com_long1,
            control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 
-summary(m1)
-summary(m2)
-summary(m3)
-summary(m4)
-summary(m5)
-
 class(m1) <- "lmerMod"
 class(m2) <- "lmerMod"
 class(m3) <- "lmerMod"
 class(m4) <- "lmerMod"
 class(m5) <- "lmerMod"
 
+ngrps <- rbind(summary(m1)$ngrps, summary(m2)$ngrps, summary(m3)$ngrps, summary(m4)$ngrps, summary(m5)$ngrps)
+
 stargazer(m1, m2, m3, m4, m5, 
-          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8),
-          report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "X", "X")), title = "Mixed effects regressions", 
-          omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8), report = ('vcsp'), 
+          add.lines = list(c("Demographic controls", "", "Yes", "Yes", "Yes", "Yes"), c("Respondents", ngrps[,1]), c("Pages", ngrps[,2])), 
+          title = "Mixed effects regressions", omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_resp_times_m.html")
 
 # Intra-individual response variability - models
@@ -360,13 +357,6 @@ m1b <- glmer(irv_p80 ~ p_rf_l2 + survey + (1 | ID), family = binomial, data = co
 m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID), family = binomial, data = com_long1)
 m3b <- glmer(irv_p80 ~ p_rf_l2*survey + sex + age_s + german + (1 | ID), family = binomial, data = com_long1)
 
-summary(m1a)
-summary(m2a)
-summary(m3a)
-summary(m1b)
-summary(m2b)
-summary(m3b)
-
 class(m1a) <- "lmerMod"
 class(m2a) <- "lmerMod"
 class(m3a) <- "lmerMod"
@@ -374,10 +364,13 @@ class(m1b) <- "lmerMod"
 class(m2b) <- "lmerMod"
 class(m3b) <- "lmerMod"
 
+ngrps <- rbind(summary(m1a)$ngrps, summary(m2a)$ngrps, summary(m3a)$ngrps, 
+               summary(m1b)$ngrps, summary(m2b)$ngrps, summary(m3b)$ngrps)
+
 stargazer(m1a, m2a, m3a, m1b, m2b, m3b, 
-          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 6),
-          report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "", "X", "X")), title = "Generalized mixed effects regressions", 
-          omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 6), report = ('vcsp'), 
+          add.lines = list(c("Demographic controls", "", "Yes", "Yes", "", "Yes", "Yes"), c("Respondents", ngrps)), 
+          title = "Generalized mixed effects regressions", omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_irv_m.html")
 
 ## 05: Compare groups (item level)
@@ -396,22 +389,18 @@ m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) +
 m5 <- glmer(primacy ~ p_rf_l2*survey + sex + age_s + german + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2,
             control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 
-summary(m1)
-summary(m2)
-summary(m3)
-summary(m4)
-summary(m5)
-
 class(m1) <- "lmerMod"
 class(m2) <- "lmerMod"
 class(m3) <- "lmerMod"
 class(m4) <- "lmerMod"
 class(m5) <- "lmerMod"
 
+ngrps <- rbind(summary(m1)$ngrps, summary(m2)$ngrps, summary(m3)$ngrps, summary(m4)$ngrps, summary(m5)$ngrps)
+
 stargazer(m1, m2, m3, m4, m5,
-          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8),
-          report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X", "X", "X")), title = "Generalized mixed effects regressions", 
-          omit.stat = c("ll", "aic"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8), report = ('vcsp'), 
+          add.lines = list(c("Demographic controls", "", "Yes", "Yes", "Yes", "Yes"), c("Respondents", ngrps[,1]), c("Pages", ngrps[,2])), 
+          title = "Generalized mixed effects regressions", omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_primacy_m.html")
 
 ## 06: Compare groups (respondent level)
@@ -422,13 +411,11 @@ m1 <- glm(AC_Answ ~ p_rf_l2 + survey, family = binomial, data = com_ac)
 m2 <- glm(AC_Answ ~ p_rf_l2 + survey + sex + age_s + german, family = binomial, data = com_ac)
 m3 <- glm(AC_Answ ~ p_rf_l2*survey + sex + age_s + german, family = binomial, data = com_ac)
 
-summary(m0)
-summary(m1)
-summary(m2)
-summary(m3)
-
+r2s <- round(rbind(PseudoR2(m1, "McKelveyZavoina"), PseudoR2(m2, "McKelveyZavoina"), PseudoR2(m3, "McKelveyZavoina")), 3)
+BICs <- round(rbind(BIC(m1), BIC(m2), BIC(m3)), 3)
+  
 stargazer(m1, m2, m3, 
-          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 3),
-          report = ('vcsp'), add.lines = list(c("Demographic controls", "", "X", "X")), title = "Logistic regressions", 
-          omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          keep = c("Constant", "p_rf_l2", "survey"), order = c(1, 3), report = ('vcsp'), 
+          add.lines = list(c("Demographic controls", "", "Yes", "Yes"), c("Pseudo r2", r2s[,1]), c("Bayesian Inf. Crit.", BICs[,1])), 
+          title = "Logistic regressions", omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_ac_m.html")
