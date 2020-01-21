@@ -505,7 +505,7 @@ resamp_l3 <-
                             "RF" = "3",
                             "XGBoost" = "4"))
 
-# Save results
+# Save all results
 
 save(sm, resamp_l1, resamp_l2, resamp_l3, 
      glmnet_l1, glmnet_l2, glmnet_l3, 
@@ -513,3 +513,7 @@ save(sm, resamp_l1, resamp_l2, resamp_l3,
      rf_l1, rf_l2, rf_l3,
      xgb_l1, xgb_l2, xgb_l3,
      file = "./src/output1.Rdata")
+
+# Save random forest
+
+saveRDS(rf_l2, file = "./src/rf.rds")
