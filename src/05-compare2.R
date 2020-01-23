@@ -9,6 +9,7 @@
 
 library(tidyverse)
 library(broom)
+library(sjmisc)
 library(caret)
 library(gridExtra)
 library(ggmosaic)
@@ -61,36 +62,27 @@ com_ac$age_s <- scale(com_ac$age)[,1] # Re-scale age
 
 ## 02a: Data check - Descriptive Statistics
 
-CT <- com_long1 %>% group_by(survey) %>%
+CT <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
   summarise(m = mean(Completion_Time_sc, na.rm = T), min = min(Completion_Time_sc, na.rm = T), max = max(Completion_Time_sc, na.rm = T), non_na = sum(!is.na(Completion_Time_sc)), n())
 
-irv20 <- com_long1 %>% filter(pages == "Matrix") %>% group_by(survey) %>%
+irv20 <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% filter(pages == "Matrix") %>% group_by(survey) %>%
   summarise(m = mean(irv_p20, na.rm = T), min = min(irv_p20, na.rm = T), max = max(irv_p20, na.rm = T), non_na = sum(!is.na(irv_p20)), n())
 
-irv80 <- com_long1 %>% filter(pages == "Matrix") %>% group_by(survey) %>%
+irv80 <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% filter(pages == "Matrix") %>% group_by(survey) %>%
   summarise(m = mean(irv_p80, na.rm = T), min = min(irv_p80, na.rm = T), max = max(irv_p80, na.rm = T), non_na = sum(!is.na(irv_p80)), n())
 
-prim <- com_long2 %>% group_by(survey) %>%
+prim <- com_long2 %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
   summarise(m = mean(primacy, na.rm = T), min = min(primacy, na.rm = T), max = max(primacy, na.rm = T), non_na = sum(!is.na(primacy)), n())
 
-AC <- com_ac %>% group_by(survey) %>%
+AC <- com_ac %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
   summarise(m = mean(AC_Answ, na.rm = T), min = min(AC_Answ, na.rm = T), max = max(AC_Answ, na.rm = T), non_na = sum(!is.na(AC_Answ)), n())
 
 move <- com_long1 %>% to_dummy(p_rf_l2) %>% bind_cols(com_long1) %>% group_by(survey) %>%
   summarise(m = mean(p_rf_l2_2, na.rm = T), min = min(p_rf_l2_2, na.rm = T), max = max(p_rf_l2_2, na.rm = T), non_na = sum(!is.na(p_rf_l2_2)), n())
 
-age <- com_ac %>% group_by(survey) %>%
-  summarise(m = mean(age, na.rm = T), min = min(age, na.rm = T), max = max(age, na.rm = T), non_na = sum(!is.na(age)), n())
-
-sex <- com_ac %>% to_dummy(sex) %>% bind_cols(com_ac) %>% group_by(survey) %>%
-  summarise(m = mean(sex_1, na.rm = T), min = min(sex_1, na.rm = T), max = max(sex_1, na.rm = T), non_na = sum(!is.na(sex_1)), n())
-
-german <- com_ac %>% to_dummy(german) %>% bind_cols(com_ac) %>% group_by(survey) %>%
-  summarise(m = mean(german_1, na.rm = T), min = min(german_1, na.rm = T), max = max(german_1, na.rm = T), non_na = sum(!is.na(german_1)), n())
-
-stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, age = age, sex = sex, german = german, .id = "var") %>% 
+stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, .id = "var") %>% 
   filter(survey == "Survey one") %>% select(-survey) %>% mutate(m = round(m, 3))
-stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, age = age, sex = sex, german = german, .id = "var") %>%
+stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, .id = "var") %>%
   filter(survey == "Survey two") %>% select(-survey) %>% mutate(m = round(m, 3))
 
 stargazer(stats_s1, summary = FALSE, out = "t5b_stats_1.html")
