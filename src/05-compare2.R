@@ -259,27 +259,50 @@ com_long1 %>%
 
 ggsave("p5b_class_preds2.pdf", width = 8, height = 6)
 
-p <- ggplot(com_long1) +
+plot_dat1 <- com_long1 %>%
+  select(p_rf_l2, page, survey) 
+
+plot_dat2 <- com_ac %>%
+  select(p_rf_l2, page, survey)
+
+plot_data <- rbind(plot_dat1, plot_dat2)
+
+plot_data <- plot_data %>%
+  mutate(p_rf_l2 = fct_recode(p_rf_l2, "Non-Moving" = "Not_Moving", "Moving" = "Moving")) %>%
+  mutate(survey = fct_recode(survey, "Cross-sectional Survey 1" = "Survey one", "Cross-sectional Survey 2" = "Survey two")) %>%
+  mutate(page = fct_recode(page, 
+                           "S1" = "E1",
+                           "S2" = "E2",
+                           "S3" = "E3",
+                           "S4" = "E4",
+                           "S5" = "E5",
+                           "I-b-I1" = "M_1",
+                           "I-b-I2" = "M_2",
+                           "IMC" = "AC")) %>%
+  mutate(page = fct_relevel(page, "IMC", after = Inf))
+
+p <- ggplot(plot_data) +
   geom_mosaic(aes(x = product(p_rf_l2, page), fill=p_rf_l2), na.rm=TRUE) +
   facet_grid(survey~.)
 
-sum <- com_long1 %>%
+sum <- plot_data %>%
   group_by(survey, page) %>%
   summarise(sum = sum(!is.na(p_rf_l2))) %>%
   slice(rep(1:n(), each = 2))
 
 temp <- ggplot_build(p)$data[[1]] %>% 
-  mutate(survey = ifelse(PANEL == 1, "Survey one", "Survey two")) %>%
+  mutate(survey = ifelse(PANEL == 1, "Cross-sectional Survey 1", "Cross-sectional Survey 2")) %>%
   add_column(sum$sum) %>%
   mutate(prop = .wt/sum$sum) %>%
   mutate(prop = sprintf("%0.2f", prop))
 
-p + geom_text(data = temp, aes(x = (xmin+xmax)/2, y = (ymin+ymax)/2, label= prop), size = 3) +
-  labs(y = "", x = "Page") +
-  theme(text = element_text(size = 10),
+p + geom_text(data = temp, aes(x = (xmin+xmax)/2, y = (ymin+ymax)/2, label= prop), size = 4) +
+  labs(y = "", x = "Web Survey Page") +
+  scale_fill_grey(start = 0.6, end = 0.8) +
+  theme(text = element_text(size = 14),
         legend.position = "none")
 
-ggsave("p5b_class_preds2_2.pdf", width = 7, height = 6)
+ggsave("p5b_class_preds2_2.png", width = 7, height = 6)
 
 ## 04: Compare groups (page level)
 # Completion Times - plots
