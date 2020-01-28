@@ -72,7 +72,6 @@ sm <-
 
 sm1 <- select(sm, G_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
 sm2 <- select(sm, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
-sm3 <- select(sm, motionvars[5:50], G_group, D_group, SM_mean, SM_med, SM_var, SM_mad, SM_iqr, SM_min, SM_max, SM_r, SM_q5, SM_q10, SM_q25, SM_q75, SM_q9, SM_q95)
 
 # Examples of TA profiles
 
@@ -150,15 +149,14 @@ ggsave("p1_TA_examples.pdf", plots, width = 7.5, height = 6)
 
 ## 02: Tuning Setup
 
-# k = length(unique(sm$ID))
-folds <- groupKFold(sm$ID, k = 10)
-
 multiStats <- function(...) c(multiClassSummary(...), 
                               mnLogLoss(...))
 
 evalStats <- function(...) c(twoClassSummary(...), 
                              defaultSummary(...),
                              mnLogLoss(...))
+
+folds <- groupKFold(sm$ID, k = 10) # 10 fold CV
 
 ctrl1  <- trainControl(method = "cv",
                        index = folds,
@@ -173,6 +171,10 @@ ctrl2  <- trainControl(method = "cv",
                        summaryFunction = evalStats,
                        classProbs = TRUE,
                        verboseIter = TRUE)
+
+ntrain <- nrow(sm) # nested CV 
+outer_train <- folds
+outer_test <- lapply(outer_train, function(x) (1:ntrain)[-x])
 
 ## 03: glmnet
 
@@ -210,17 +212,25 @@ plot(varImp(glmnet_l2))
 tab <- xtable(confusionMatrix(glmnet_l2)$table, digits = 3)
 print(tab, type = "latex", file = "t1_glmnet2.tex")
 
-set.seed(74684)
-glmnet_l3 <- train(D_group  ~ . - G_group,
-                   data = sm3,
-                   method = "glmnet",
-                   family = "binomial",
-                   trControl = ctrl2,
-                   tuneGrid = grid,
-                   metric = "logLoss")
+glmnet_m <- list()
+glmnet_p <- list()
 
-plot(glmnet_l3)
-plot(varImp(glmnet_l3), top = 20)
+set.seed(74684)
+for (i in 1:10){ # nested CV
+  glmnet_m[[i]] <- train(D_group ~ ., 
+               data = sm2[outer_train[[i]],],
+               method = "glmnet",
+               family = "binomial",
+               tuneGrid = grid,
+               metric = "logLoss",
+               trControl = trainControl(method = "cv", 
+                                        number = 10,
+                                        summaryFunction = evalStats,
+                                        classProbs = TRUE))
+  glmnet_p[[i]] <- cbind(predict(glmnet_m[[i]], newdata = sm2[outer_test[[i]],], type = "prob"),
+                         pred = predict(glmnet_m[[i]], newdata = sm2[outer_test[[i]],]),
+                         obs = sm2[outer_test[[i]], 1])
+}
 
 ## 04: CTREE
 
@@ -254,16 +264,24 @@ plot(varImp(ctree_l2))
 tab <- xtable(confusionMatrix(ctree_l2)$table, digits = 3)
 print(tab, type = "latex", file = "t1_ctree_2.tex")
 
-set.seed(74684)
-ctree_l3 <- train(D_group  ~ . - G_group,
-                  data = sm3,
-                  method = "ctree",
-                  trControl = ctrl2,
-                  tuneGrid = grid,
-                  metric = "logLoss")
+ctree_m <- list()
+ctree_p <- list()
 
-plot(ctree_l3)
-plot(ctree_l3$finalModel)
+set.seed(74684)
+for (i in 1:10){ # nested CV
+  ctree_m[[i]] <- train(D_group ~ ., 
+                         data = sm2[outer_train[[i]],],
+                         method = "ctree",
+                         tuneGrid = grid,
+                         metric = "logLoss",
+                         trControl = trainControl(method = "cv", 
+                                                  number = 10,
+                                                  summaryFunction = evalStats,
+                                                  classProbs = TRUE))
+  ctree_p[[i]] <- cbind(predict(ctree_m[[i]], newdata = sm2[outer_test[[i]],], type = "prob"),
+                        pred = predict(ctree_m[[i]], newdata = sm2[outer_test[[i]],]),
+                        obs = sm2[outer_test[[i]], 1])
+}
 
 ## 05: Random Forest and Extra Trees
 
@@ -302,22 +320,24 @@ plot(varImp(rf_l2), top = 20)
 tab <- xtable(confusionMatrix(rf_l2)$table, digits = 3)
 print(tab, type = "latex", file = "t1_rf_2.tex")
 
-cols <- ncol(model.matrix(G_group  ~ . - D_group, data = sm3)[,-1])
-grid <- expand.grid(mtry = c(round(sqrt(cols)), round(log(cols))),
-                    splitrule = c("gini", "extratrees"),
-                    min.node.size = 15)
+rf_m <- list()
+rf_p <- list()
 
 set.seed(74684)
-rf_l3 <- train(D_group  ~ . - G_group,
-               data = sm3,
-               method = "ranger",
-               trControl = ctrl2,
-               tuneGrid = grid,
-               metric = "logLoss",
-               importance = "impurity")
-
-plot(rf_l3)
-plot(varImp(rf_l3), top = 20)
+for (i in 1:10){ # nested CV
+  rf_m[[i]] <- train(D_group ~ ., 
+                     data = sm2[outer_train[[i]],],
+                     method = "ranger",
+                     tuneGrid = grid,
+                     metric = "logLoss",
+                     trControl = trainControl(method = "cv", 
+                                              number = 10,
+                                              summaryFunction = evalStats,
+                                              classProbs = TRUE))
+  rf_p[[i]] <- cbind(predict(rf_m[[i]], newdata = sm2[outer_test[[i]],], type = "prob"),
+                     pred = predict(rf_m[[i]], newdata = sm2[outer_test[[i]],]),
+                     obs = sm2[outer_test[[i]], 1])
+}
 
 ## 06: Boosting
 
@@ -357,16 +377,24 @@ plot(varImp(xgb_l2))
 tab <- xtable(confusionMatrix(xgb_l2)$table, digits = 3)
 print(tab, type = "latex", file = "t1_xgb_2.tex")
 
-set.seed(74684)
-xgb_l3 <- train(D_group  ~ . - G_group,
-                data = sm3,
-                method = "xgbTree",
-                trControl = ctrl2,
-                tuneGrid = grid,
-                metric = "logLoss")
+xgb_m <- list()
+xgb_p <- list()
 
-plot(xgb_l3)
-plot(varImp(xgb_l3), top = 20)
+set.seed(74684)
+for (i in 1:10){ # nested CV
+  xgb_m[[i]] <- train(D_group ~ ., 
+                      data = sm2[outer_train[[i]],],
+                      method = "xgbTree",
+                      tuneGrid = grid,
+                      metric = "logLoss",
+                      trControl = trainControl(method = "cv", 
+                                               number = 10,
+                                               summaryFunction = evalStats,
+                                               classProbs = TRUE))
+  xgb_p[[i]] <- cbind(predict(xgb_m[[i]], newdata = sm2[outer_test[[i]],], type = "prob"),
+                      pred = predict(xgb_m[[i]], newdata = sm2[outer_test[[i]],]),
+                      obs = sm2[outer_test[[i]], 1])
+}
 
 ## 06: Comparison
 
@@ -429,16 +457,8 @@ resamps_l2 <- resamples(list(GLMnet = glmnet_l2,
                              XGBoost = xgb_l2))
 
 resamps_l2
+summary(resamps_l2)
 bwplot(resamps_l2)
-
-sum <- summary(resamps_l2)
-sum_acc <- round(sum$statistics$Accuracy, 3)
-sum_ll <- round(sum$statistics$logLoss, 3)
-sum_roc <- round(sum$statistics$ROC, 3)
-
-stargazer(sum_acc, summary = FALSE, out = "t1_perf_1.html")
-stargazer(sum_ll, summary = FALSE, out = "t1_perf_2.html")
-stargazer(sum_roc, summary = FALSE, out = "t1_perf_3.html")
 
 resamp_l2 <- 
   reshape(resamps_l2$values,
@@ -477,41 +497,60 @@ p4 <- ggplot(resamp_l2) +
 plots <- arrangeGrob(p3, p4, nrow = 1)
 ggsave("p1_CV_perf2.pdf", plots, width = 8.25, height = 6)
 
-# D_group + raw motion
+# Nested CV results
 
-resamps_l3 <- resamples(list(GLMnet = glmnet_l3,
-                             CTREE = ctree_l3,
-                             RF = rf_l3,
-                             XGBoost = xgb_l3))
+glmnet_sum <- matrix(nrow = 10, ncol = 3)
+for (i in 1:10){
+glmnet_sum[i, 1] <- defaultSummary(glmnet_p[[i]], lev = levels(glmnet_p[[i]]$obs))[[1]]
+glmnet_sum[i, 2] <- twoClassSummary(glmnet_p[[i]], lev = levels(glmnet_p[[i]]$obs))[[1]]
+glmnet_sum[i, 3] <- mnLogLoss(glmnet_p[[i]], lev = levels(glmnet_p[[i]]$obs))[[1]]
+}
 
-resamps_l3
-summary(resamps_l3)
-bwplot(resamps_l3)
+ctree_sum <- matrix(nrow = 10, ncol = 3)
+for (i in 1:10){
+  ctree_sum[i, 1] <- defaultSummary(ctree_p[[i]], lev = levels(ctree_p[[i]]$obs))[[1]]
+  ctree_sum[i, 2] <- twoClassSummary(ctree_p[[i]], lev = levels(ctree_p[[i]]$obs))[[1]]
+  ctree_sum[i, 3] <- mnLogLoss(ctree_p[[i]], lev = levels(ctree_p[[i]]$obs))[[1]]
+}
 
-resamp_l3 <- 
-  reshape(resamps_l3$values,
-          direction = "long",
-          varying = 2:ncol(resamps_l3$values),
-          sep = "~",
-          v.names = c("Accuracy", "Kappa", "logLoss", "ROC", "Sens", "Spec"),
-          timevar = "model")
+rf_sum <- matrix(nrow = 10, ncol = 3)
+for (i in 1:10){
+  rf_sum[i, 1] <- defaultSummary(rf_p[[i]], lev = levels(rf_p[[i]]$obs))[[1]]
+  rf_sum[i, 2] <- twoClassSummary(rf_p[[i]], lev = levels(rf_p[[i]]$obs))[[1]]
+  rf_sum[i, 3] <- mnLogLoss(rf_p[[i]], lev = levels(rf_p[[i]]$obs))[[1]]
+}
 
-resamp_l3 <- 
-  resamp_l3 %>%
-  mutate(model = factor(model)) %>%
-  mutate(model = fct_recode(model,
-                            "GLMnet" = "1",
-                            "CTREE" = "2",
-                            "RF" = "3",
-                            "XGBoost" = "4"))
+xgb_sum <- matrix(nrow = 10, ncol = 3)
+for (i in 1:10){
+  xgb_sum[i, 1] <- defaultSummary(xgb_p[[i]], lev = levels(xgb_p[[i]]$obs))[[1]]
+  xgb_sum[i, 2] <- twoClassSummary(xgb_p[[i]], lev = levels(xgb_p[[i]]$obs))[[1]]
+  xgb_sum[i, 3] <- mnLogLoss(xgb_p[[i]], lev = levels(xgb_p[[i]]$obs))[[1]]
+}
+
+sum_stats <- matrix(nrow = 12, ncol = 6)
+num <- c(1, 5, 9)
+
+for (i in 1:3){
+j <- num[i]
+sum_stats[j, ] <- rbind(min(glmnet_sum[, i]), quantile(glmnet_sum[, i], probs = 0.25), median(glmnet_sum[, i]), mean(glmnet_sum[, i]), 
+                      quantile(glmnet_sum[, i], probs = 0.75), max(glmnet_sum[, i]))
+sum_stats[j+1, ] <- rbind(min(ctree_sum[, i]), quantile(ctree_sum[, i], probs = 0.25), median(ctree_sum[, i]), mean(ctree_sum[, i]), 
+                      quantile(ctree_sum[, i], probs = 0.75), max(ctree_sum[, i]))
+sum_stats[j+2, ] <- rbind(min(rf_sum[, i]), quantile(rf_sum[, i], probs = 0.25), median(rf_sum[, i]), mean(rf_sum[, i]), 
+                      quantile(rf_sum[, i], probs = 0.75), max(rf_sum[, i]))
+sum_stats[j+3, ] <- rbind(min(xgb_sum[, i]), quantile(xgb_sum[, i], probs = 0.25), median(xgb_sum[, i]), mean(xgb_sum[, i]), 
+                      quantile(xgb_sum[, i], probs = 0.75), max(xgb_sum[, i]))
+}
+
+stargazer(round(sum_stats, 3), summary = FALSE, out = "t1_perf.html")
 
 # Save all results
 
-save(sm, resamp_l1, resamp_l2, resamp_l3, 
-     glmnet_l1, glmnet_l2, glmnet_l3, 
-     ctree_l1, ctree_l2, ctree_l3,
-     rf_l1, rf_l2, rf_l3,
-     xgb_l1, xgb_l2, xgb_l3,
+save(sm, resamp_l1, resamp_l2, 
+     glmnet_l1, glmnet_l2, 
+     ctree_l1, ctree_l2,
+     rf_l1, rf_l2,
+     xgb_l1, xgb_l2,
      file = "./src/output1.Rdata")
 
 # Save random forest
