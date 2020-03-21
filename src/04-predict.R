@@ -20,11 +20,8 @@ load("./data/Respondi_Test.RData")
 
 # Pre-processing
 
-Dataset <- 
-  Dataset %>% rename(ID = lfdn)
-
 resp_p <- 
-  Dataset %>% select(ID, contains("SM_No_G"))
+  D19_no_dup %>% select(ID, contains("SM_No_G"))
 
 resp_long <- reshape(resp_p, direction = "long",
                      varying = c("MA_1a_SM_No_G", "MA_2a_SM_No_G", "MA_3a_SM_No_G", "MA_4a_SM_No_G", "MA_5a_SM_No_G",
@@ -207,7 +204,7 @@ save(resp_SM, file = "./src/output4.Rdata")
 
 # 06: Join with full data (long_1: one row per page)
 
-ML <- Dataset %>%
+ML <- D19_no_dup %>%
   rename("E1_Answ_1" = "MA_1_Answ_1",
          "E2_Answ_1" = "MA_2_Answ_1",
          "E3_Answ_1" = "MA_3_Answ_1",
@@ -252,8 +249,8 @@ ML[, list_out] <- lapply(ML[, list_in], cln_outliers)
 
 # IRV
 
-ML$M_1_irv <- rowSds(as.matrix(ML[, 166:173]), na.rm = T) # Row SD for M_1
-ML$M_2_irv <- rowSds(as.matrix(ML[, 179:186]), na.rm = T) # Row SD for M_2
+ML$M_1_irv <- rowSds(as.matrix(ML[, 167:174]), na.rm = T) # Row SD for M_1
+ML$M_2_irv <- rowSds(as.matrix(ML[, 180:187]), na.rm = T) # Row SD for M_2
 
 ML$E1_irv <- NA
 ML$E2_irv <- NA

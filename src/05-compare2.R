@@ -63,22 +63,22 @@ com_ac$age_s <- scale(com_ac$age)[,1] # Re-scale age
 ## 02a: Data check - Descriptive Statistics
 
 CT <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
-  summarise(m = mean(Completion_Time_sc, na.rm = T), min = min(Completion_Time_sc, na.rm = T), max = max(Completion_Time_sc, na.rm = T), non_na = sum(!is.na(Completion_Time_sc)), n())
+  summarise(min = min(Completion_Time_sc, na.rm = T), m = mean(Completion_Time_sc, na.rm = T), max = max(Completion_Time_sc, na.rm = T), n())
 
 irv20 <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% filter(pages == "Matrix") %>% group_by(survey) %>%
-  summarise(m = mean(irv_p20, na.rm = T), min = min(irv_p20, na.rm = T), max = max(irv_p20, na.rm = T), non_na = sum(!is.na(irv_p20)), n())
+  summarise(min = min(irv_p20, na.rm = T), m = mean(irv_p20, na.rm = T), max = max(irv_p20, na.rm = T), n())
 
 irv80 <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% filter(pages == "Matrix") %>% group_by(survey) %>%
-  summarise(m = mean(irv_p80, na.rm = T), min = min(irv_p80, na.rm = T), max = max(irv_p80, na.rm = T), non_na = sum(!is.na(irv_p80)), n())
+  summarise(min = min(irv_p80, na.rm = T), m = mean(irv_p80, na.rm = T), max = max(irv_p80, na.rm = T), n())
 
 prim <- com_long2 %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
-  summarise(m = mean(primacy, na.rm = T), min = min(primacy, na.rm = T), max = max(primacy, na.rm = T), non_na = sum(!is.na(primacy)), n())
+  summarise(min = min(primacy, na.rm = T), m = mean(primacy, na.rm = T), max = max(primacy, na.rm = T), n())
 
 AC <- com_ac %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
-  summarise(m = mean(AC_Answ, na.rm = T), min = min(AC_Answ, na.rm = T), max = max(AC_Answ, na.rm = T), non_na = sum(!is.na(AC_Answ)), n())
+  summarise(min = min(AC_Answ, na.rm = T), m = mean(AC_Answ, na.rm = T), max = max(AC_Answ, na.rm = T), n())
 
 move <- com_long1 %>% to_dummy(p_rf_l2) %>% bind_cols(com_long1) %>% group_by(survey) %>%
-  summarise(m = mean(p_rf_l2_2, na.rm = T), min = min(p_rf_l2_2, na.rm = T), max = max(p_rf_l2_2, na.rm = T), non_na = sum(!is.na(p_rf_l2_2)), n())
+  summarise(min = min(p_rf_l2_2, na.rm = T), m = mean(p_rf_l2_2, na.rm = T), max = max(p_rf_l2_2, na.rm = T), n())
 
 stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, .id = "var") %>% 
   filter(survey == "Survey one") %>% select(-survey) %>% mutate(m = round(m, 3))
@@ -91,19 +91,23 @@ stargazer(stats_s2, summary = FALSE, out = "t5b_stats_2.html")
 ## 02b: Data check - Survey Motion
 
 sm_stats1 <- sm %>% filter(D_group == "Moving") %>% select(SM_mean:SM_q95) %>%
-  summarise_all(list(~mean(.), ~min(.), ~max(.), ~n())) %>% mutate_all(~round(., 3))
+  summarise_all(list(~min(.), ~mean(.), ~max(.), ~n())) %>% mutate_all(~round(., 3))
 sm_stats1 <- as.data.frame(matrix(sm_stats1, ncol = 4)) 
 
 sm_stats2 <- sm %>% filter(D_group == "Not_Moving") %>% select(SM_mean:SM_q95) %>%
-  summarise_all(list(~mean(.), ~min(.), ~max(.), ~n())) %>% mutate_all(~round(., 3))
+  summarise_all(list(~min(.), ~mean(.), ~max(.), ~n())) %>% mutate_all(~round(., 3))
 sm_stats2 <- as.data.frame(matrix(sm_stats2, ncol = 4))
 
-Goe_stats <- Goe_SM %>% select(SM_mean:SM_q95) %>% mutate_if(is.numeric, list(~na_if(., Inf))) %>%
-  summarise_all(list(~mean(., na.rm = T), ~min(., na.rm = T), ~max(., na.rm = T), ~n())) %>% mutate_all(~round(., 3))
+Goe_stats <- Goe_SM %>% 
+  filter(page %in% c("E1", "E2", "E3", "E4", "E5", "M_1", "M_2", "AC")) %>% 
+  select(SM_mean:SM_q95) %>% mutate_if(is.numeric, list(~na_if(., Inf))) %>%
+  summarise_all(list(~min(., na.rm = T), ~mean(., na.rm = T), ~max(., na.rm = T), ~n())) %>% mutate_all(~round(., 3))
 Goe_stats <- as.data.frame(matrix(Goe_stats, ncol = 4))
 
-resp_stats <- resp_SM %>% select(SM_mean:SM_q95) %>% mutate_if(is.numeric, list(~na_if(., Inf))) %>%
-  summarise_all(list(~mean(., na.rm = T), ~min(., na.rm = T), ~max(., na.rm = T), ~n())) %>% mutate_all(~round(., 3))
+resp_stats <- resp_SM %>% 
+  filter(page %in% c("E1", "E2", "E3", "E4", "E5", "M_1", "M_2", "AC")) %>% 
+  select(SM_mean:SM_q95) %>% mutate_if(is.numeric, list(~na_if(., Inf))) %>%
+  summarise_all(list(~min(., na.rm = T), ~mean(., na.rm = T), ~max(., na.rm = T), ~n())) %>% mutate_all(~round(., 3))
 resp_stats <- as.data.frame(matrix(resp_stats, ncol = 4))
 
 stargazer(sm_stats1, summary = FALSE, out = "t5b_SM_stats_1.html")
