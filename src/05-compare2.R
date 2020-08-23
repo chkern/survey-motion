@@ -17,6 +17,7 @@ library(car)
 library(DescTools)
 library(lme4)
 library(lmerTest)
+library(MuMIn)
 library(xtable)
 library(stargazer)
 
@@ -350,6 +351,12 @@ m4 <- lmer(Completion_Time_sc ~ p_rf_l2*pages + sex + age_s + german + survey + 
 m5 <- lmer(Completion_Time_sc ~ p_rf_l2*survey + pages + sex + age_s + german + (1 | ID) + (1 | page), data = com_long1,
            control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 
+r.squaredGLMM(m1)
+r.squaredGLMM(m2)
+r.squaredGLMM(m3)
+r.squaredGLMM(m4)
+r.squaredGLMM(m5)
+
 class(m1) <- "lmerMod"
 class(m2) <- "lmerMod"
 class(m3) <- "lmerMod"
@@ -375,6 +382,13 @@ m0b <- glmer(irv_p80 ~ (1 | ID), family = binomial, data = com_long1)
 m1b <- glmer(irv_p80 ~ p_rf_l2 + survey + (1 | ID), family = binomial, data = com_long1)
 m2b <- glmer(irv_p80 ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID), family = binomial, data = com_long1)
 m3b <- glmer(irv_p80 ~ p_rf_l2*survey + sex + age_s + german + (1 | ID), family = binomial, data = com_long1)
+
+r.squaredGLMM(m1a)
+r.squaredGLMM(m2a)
+r.squaredGLMM(m3a)
+r.squaredGLMM(m1b)
+r.squaredGLMM(m2b)
+r.squaredGLMM(m3b)
 
 class(m1a) <- "lmerMod"
 class(m2a) <- "lmerMod"
@@ -407,6 +421,12 @@ m4 <- glmer(primacy ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) +
             control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 m5 <- glmer(primacy ~ p_rf_l2*survey + sex + age_s + german + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2,
             control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+
+r.squaredGLMM(m1)
+r.squaredGLMM(m2)
+r.squaredGLMM(m3)
+r.squaredGLMM(m4)
+r.squaredGLMM(m5)
 
 class(m1) <- "lmerMod"
 class(m2) <- "lmerMod"
