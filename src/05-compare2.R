@@ -44,10 +44,10 @@ com_long1$age_s <- scale(com_long1$age)[,1] # Re-scale age
 Goe_long2 <- Goe_long2 %>%
   filter(page %in% c("E1", "E2", "E3", "E4", "E5", "M_1", "M_2")) %>%
   select(ID, item, page, pages, sex, age, age_s, german,
-         primacy, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
+         primacy, NR, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
 
 resp_long2 <- select(resp_long2, ID, item, page, pages, sex, age, age_s, german,
-                     primacy, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
+                     primacy, NR, SM, SM_mean:SM_q95, p_glmnet_l1:p_xgb_l2)
 
 com_long2 <- bind_rows("Survey one" = Goe_long2, "Survey two" = resp_long2, .id = "survey")
 com_long2$age_s <- scale(com_long2$age)[,1] # Re-scale age
@@ -75,15 +75,18 @@ irv80 <- com_long1 %>% filter(!is.na(p_rf_l2)) %>% filter(pages == "Matrix") %>%
 prim <- com_long2 %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
   summarise(min = min(primacy, na.rm = T), m = mean(primacy, na.rm = T), max = max(primacy, na.rm = T), n())
 
+nr <- com_long2 %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
+  summarise(min = min(NR, na.rm = T), m = mean(NR, na.rm = T), max = max(NR, na.rm = T), n())
+
 AC <- com_ac %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
   summarise(min = min(AC_Answ, na.rm = T), m = mean(AC_Answ, na.rm = T), max = max(AC_Answ, na.rm = T), n())
 
 move <- com_long1 %>% to_dummy(p_rf_l2) %>% bind_cols(com_long1) %>% group_by(survey) %>%
   summarise(min = min(p_rf_l2_2, na.rm = T), m = mean(p_rf_l2_2, na.rm = T), max = max(p_rf_l2_2, na.rm = T), n())
 
-stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, .id = "var") %>% 
+stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, nr = nr, AC = AC, move = move, .id = "var") %>% 
   filter(survey == "Survey one") %>% select(-survey) %>% mutate(m = round(m, 3))
-stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, AC = AC, move = move, .id = "var") %>%
+stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, nr = nr, AC = AC, move = move, .id = "var") %>%
   filter(survey == "Survey two") %>% select(-survey) %>% mutate(m = round(m, 3))
 
 stargazer(stats_s1, summary = FALSE, out = "t5b_stats_1.html")
@@ -441,6 +444,48 @@ stargazer(m1, m2, m3, m4, m5,
           add.lines = list(c("Demographic controls", "", "Yes", "Yes", "Yes", "Yes"), c("Respondents", ngrps[,1]), c("Pages", ngrps[,2])), 
           title = "Generalized mixed effects regressions", omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
           out = "t5b_primacy_m.html")
+
+# Item nonresponse - models
+
+m0 <- glmer(NR ~ (1 | ID) + (1 | page), family = binomial, data = com_long2, 
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m1 <- glmer(NR ~ p_rf_l2 + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m2 <- glmer(NR ~ p_rf_l2 + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m3 <- glmer(NR ~ p_rf_l2 + pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m4 <- glmer(NR ~ p_rf_l2*pages + sex + age_s + german + survey + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+m5 <- glmer(NR ~ p_rf_l2*survey + sex + age_s + german + pages + (1 | ID) + (1 | page), family = binomial, data = com_long2,
+            control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+
+isSingular(m0)
+isSingular(m1)
+isSingular(m2)
+isSingular(m3)
+isSingular(m4)
+isSingular(m5)
+
+r.squaredGLMM(m1)
+r.squaredGLMM(m2)
+r.squaredGLMM(m3)
+r.squaredGLMM(m4)
+r.squaredGLMM(m5)
+
+class(m1) <- "lmerMod"
+class(m2) <- "lmerMod"
+class(m3) <- "lmerMod"
+class(m4) <- "lmerMod"
+class(m5) <- "lmerMod"
+
+ngrps <- rbind(summary(m1)$ngrps, summary(m2)$ngrps, summary(m3)$ngrps, summary(m4)$ngrps, summary(m5)$ngrps)
+
+stargazer(m1, m2, m3, m4, m5,
+          keep = c("Constant", "p_rf_l2", "pages", "survey"), order = c(1, 7, 2, 8), report = ('vcsp'), 
+          add.lines = list(c("Demographic controls", "", "Yes", "Yes", "Yes", "Yes"), c("Respondents", ngrps[,1]), c("Pages", ngrps[,2])), 
+          title = "Generalized mixed effects regressions", omit.stat = c("ll"), omit.table.layout = "n", align = TRUE, no.space = TRUE, out.header = T, 
+          out = "t5b_item-nonresponse_m.html")
 
 ## 06: Compare groups (respondent level)
 # Attention check - models

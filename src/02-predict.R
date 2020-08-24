@@ -315,28 +315,79 @@ list_out <- c("E1_primacy", "E2_primacy", "E3_primacy", "E4_primacy", "E5_primac
 
 ML[,list_out] <- lapply(ML[,list_in], function(x) {ifelse(x == 1, 1, 0)})
 
+# Item nonresponse
+
+list_out <- c("E1_NR", "E2_NR", "E3_NR", "E4_NR", "E5_NR", "E6_NR", "E7_NR", "E8_NR",
+              "M_1_1_NR", "M_1_2_NR", "M_1_3_NR", "M_1_4_NR", "M_1_5_NR", "M_1_6_NR", "M_1_7_NR", "M_1_8_NR",
+              "M_2_1_NR", "M_2_2_NR", "M_2_3_NR", "M_2_4_NR", "M_2_5_NR", "M_2_6_NR", "M_2_7_NR", "M_2_8_NR")
+
+ML[,list_out] <- lapply(ML[,list_in], function(x) {ifelse(x == 0, 1, 0)})
+
 # Join
 
 ML_sub <- ML %>% 
   select(ID, Completed, Lurker, No_JavaScript, Mobile_Device, 
          Demo_Answ_1, Demo_Answ_2, Demo_Answ_3, Demo_Answ_4, Demo_Answ_5,
-         E1_primacy, E2_primacy, E3_primacy, E4_primacy, E5_primacy, E6_primacy, E7_primacy, E8_primacy,
-         M_1_1_primacy, M_1_2_primacy, M_1_3_primacy, M_1_4_primacy, M_1_5_primacy, M_1_6_primacy, M_1_7_primacy, M_1_8_primacy,
-         M_2_1_primacy, M_2_2_primacy, M_2_3_primacy, M_2_4_primacy, M_2_5_primacy, M_2_6_primacy, M_2_7_primacy, M_2_8_primacy)
+         E1_primacy, E1_NR, 
+         E2_primacy, E2_NR, 
+         E3_primacy, E3_NR, 
+         E4_primacy, E4_NR, 
+         E5_primacy, E5_NR, 
+         E6_primacy, E6_NR, 
+         E7_primacy, E7_NR, 
+         E8_primacy, E8_NR,
+         M_1_1_primacy, M_1_1_NR, 
+         M_1_2_primacy, M_1_2_NR, 
+         M_1_3_primacy, M_1_3_NR, 
+         M_1_4_primacy, M_1_4_NR, 
+         M_1_5_primacy, M_1_5_NR, 
+         M_1_6_primacy, M_1_6_NR, 
+         M_1_7_primacy, M_1_7_NR, 
+         M_1_8_primacy, M_1_8_NR,
+         M_2_1_primacy, M_2_1_NR,
+         M_2_2_primacy, M_2_2_NR, 
+         M_2_3_primacy, M_2_3_NR, 
+         M_2_4_primacy, M_2_4_NR, 
+         M_2_5_primacy, M_2_5_NR, 
+         M_2_6_primacy, M_2_6_NR, 
+         M_2_7_primacy, M_2_7_NR, 
+         M_2_8_primacy, M_2_8_NR)
 
 ML_long2 <- reshape(ML_sub, direction = "long", 
-                    varying = c("E1_primacy", "E2_primacy", "E3_primacy", "E4_primacy", "E5_primacy", "E6_primacy", "E7_primacy", "E8_primacy",
-                                "M_1_1_primacy", "M_1_2_primacy", "M_1_3_primacy", "M_1_4_primacy", "M_1_5_primacy", "M_1_6_primacy", "M_1_7_primacy", "M_1_8_primacy",
-                                "M_2_1_primacy", "M_2_2_primacy", "M_2_3_primacy", "M_2_4_primacy", "M_2_5_primacy", "M_2_6_primacy", "M_2_7_primacy", "M_2_8_primacy"), 
+                    varying = c("E1_primacy", "E1_NR", 
+                                "E2_primacy", "E2_NR", 
+                                "E3_primacy", "E3_NR", 
+                                "E4_primacy", "E4_NR", 
+                                "E5_primacy", "E5_NR", 
+                                "E6_primacy", "E6_NR", 
+                                "E7_primacy", "E7_NR", 
+                                "E8_primacy", "E8_NR",
+                                "M_1_1_primacy", "M_1_1_NR", 
+                                "M_1_2_primacy", "M_1_2_NR", 
+                                "M_1_3_primacy", "M_1_3_NR", 
+                                "M_1_4_primacy", "M_1_4_NR", 
+                                "M_1_5_primacy", "M_1_5_NR", 
+                                "M_1_6_primacy", "M_1_6_NR", 
+                                "M_1_7_primacy", "M_1_7_NR", 
+                                "M_1_8_primacy", "M_1_8_NR",
+                                "M_2_1_primacy", "M_2_1_NR",
+                                "M_2_2_primacy", "M_2_2_NR", 
+                                "M_2_3_primacy", "M_2_3_NR", 
+                                "M_2_4_primacy", "M_2_4_NR", 
+                                "M_2_5_primacy", "M_2_5_NR", 
+                                "M_2_6_primacy", "M_2_6_NR", 
+                                "M_2_7_primacy", "M_2_7_NR", 
+                                "M_2_8_primacy", "M_2_8_NR"), 
                     timevar = "item",
                     times = c("E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", 
                               "M_1_1", "M_1_2", "M_1_3", "M_1_4", "M_1_5", "M_1_6", "M_1_7", "M_1_8",
                               "M_2_1", "M_2_2", "M_2_3", "M_2_4", "M_2_5", "M_2_6", "M_2_7", "M_2_8"),
-                    v.names = c("primacy"),
+                    v.names = c("var1", "var2"),
                     idvar = "ID")
 
 ML_long2 <-
   ML_long2 %>%
+  rename(primacy = var1, NR = var2) %>%
   mutate(pages = fct_collapse(item, 
                               Matrix = c("M_1_1", "M_1_2", "M_1_3", "M_1_4", "M_1_5", "M_1_6", "M_1_7", "M_1_8",
                                          "M_2_1", "M_2_2", "M_2_3", "M_2_4", "M_2_5", "M_2_6", "M_2_7", "M_2_8"),
