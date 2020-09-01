@@ -1,6 +1,6 @@
-# Survey Motion: Predicting Completion Conditions in Mobile Web Surveys with Acceleration Data 
+# Completion Conditions and Response Behavior in Smartphone Surveys: A Prediction Approach Using Acceleration Data
 
-Code for training prediction models and comparing predicted groups
+Code for training prediction models (01-train1.R), predicting motion conditions (x-predict.R) and comparing predicted groups (x-compare.R).
 
 ### Pre-trained random forest for predicting motion conditions
 
