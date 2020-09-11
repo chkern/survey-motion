@@ -84,13 +84,18 @@ AC <- com_ac %>% filter(!is.na(p_rf_l2)) %>% group_by(survey) %>%
 move <- com_long1 %>% to_dummy(p_rf_l2) %>% bind_cols(com_long1) %>% group_by(survey) %>%
   summarise(min = min(p_rf_l2_2, na.rm = T), m = mean(p_rf_l2_2, na.rm = T), max = max(p_rf_l2_2, na.rm = T), n())
 
+demo <- com_ac %>% group_by(survey, is.na(p_rf_l2)) %>%
+  summarise(m_age = mean(age, na.rm = T), p_female = mean(as.numeric(sex) - 1, na.rm = T), p_notgerman = mean(as.numeric(german) - 1, na.rm = T), n())
+
 stats_s1 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, nr = nr, AC = AC, move = move, .id = "var") %>% 
   filter(survey == "Survey one") %>% select(-survey) %>% mutate(m = round(m, 3))
 stats_s2 <- bind_rows(CT = CT, irv20 = irv20, irv80 = irv80, prim = prim, nr = nr, AC = AC, move = move, .id = "var") %>%
   filter(survey == "Survey two") %>% select(-survey) %>% mutate(m = round(m, 3))
+stats_s0 <- demo %>% mutate(m_age = round(m_age, 3), p_female = round(p_female, 3), p_notgerman = round(p_notgerman, 3))
 
 stargazer(stats_s1, summary = FALSE, out = "t5b_stats_1.html")
 stargazer(stats_s2, summary = FALSE, out = "t5b_stats_2.html")
+stargazer(stats_s0, summary = FALSE, out = "t5b_stats_0.html")
 
 ## 02b: Data check - Survey Motion
 

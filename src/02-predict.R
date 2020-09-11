@@ -190,6 +190,8 @@ Goe_SM <- mutate(Goe_SM, page = fct_recode(page,
 
 load("./data/Goe_Test_full.RData") # inhaltliche vars
 
+ML <- filter(ML, Mobile_Device == 1)
+
 # Completion time
 
 ML <-
